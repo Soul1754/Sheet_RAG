@@ -1,58 +1,25 @@
 # Python
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
 venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.pytest_cache/
+.env
 
 # Node
 node_modules/
 .next/
-dist/
-build/
-*.tsbuildinfo
-.npm
-.eslintcache
 
-# Data (don't commit vector databases or local storage)
+# Data (don't commit vector databases)
 *.sqlite3
 chroma_db/
 data/papers/
 dump.rdb
-backend/chroma_db/
-backend/data/
-frontend/node_modules/
-backend/venv/
-
-# Environment
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Redundant nested project folder (preventing circular or duplicate commits)
-research-based-graph-rag/
+backend/chroma_db/
+dump.rdb
