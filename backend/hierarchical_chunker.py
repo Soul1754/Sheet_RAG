@@ -87,13 +87,54 @@ class HierarchicalChunker:
         # Filter empty sentences and strip whitespace
         return [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
     
+    def _is_numeric_table_content(self, text: str) -> bool:
+        """
+        Detect if text appears to be a table or numeric benchmark data.
+        Tables often have:
+        - Multiple numbers (metrics, scores, values)
+        - Separator patterns (|, &, —, etc.)
+        - Row-like structure (many columns)
+        """
+        if not text or len(text) < 20:
+            return False
+        
+        # Count numeric patterns and separators
+        number_count = len(re.findall(r'\d+\.?\d*', text))
+        total_words = len(text.split())
+        
+        # If more than 30% of words are numbers, likely a table
+        numeric_ratio = number_count / max(total_words, 1)
+        if numeric_ratio > 0.3:
+            return True
+        
+        # Check for table separators (|, &, — in a pattern)
+        separator_patterns = [r'\|', r'&', r'—']
+        separator_count = sum(len(re.findall(pattern, text)) for pattern in separator_patterns)
+        
+        # If multiple separator repeats, likely a table row
+        if separator_count >= 2 and number_count >= 2:
+            return True
+        
+        # Check for benchmark-like patterns (Method | Metric | Value format)
+        benchmark_pattern = r'\w+\s*[|&]\s*\d+\.?\d*\s*[|&]\s*\d+\.?\d*'
+        if re.search(benchmark_pattern, text):
+            return True
+        
+        return False
+    
     def _split_into_paragraphs(self, text: str) -> List[str]:
         """Split text into paragraphs"""
         # Split on double newlines or multiple whitespace lines
         paragraphs = re.split(r'\n\s*\n', text)
         
-        # Filter and clean
-        return [p.strip() for p in paragraphs if p.strip() and len(p.strip()) > 20]
+        # Filter and clean - also filter out table-like content
+        filtered = []
+        for p in paragraphs:
+            p_clean = p.strip()
+            if p_clean and len(p_clean) > 20 and not self._is_numeric_table_content(p_clean):
+                filtered.append(p_clean)
+        
+        return filtered
     
     def _split_into_sections(self, text: str) -> List[Dict[str, str]]:
         """
@@ -264,6 +305,9 @@ class HierarchicalChunker:
             sentences = self._split_into_sentences(para_chunk.text)
             for sent in sentences:
                 if len(sent) < 15:  # Skip very short sentences
+                    continue
+                # Skip numeric table-like content
+                if self._is_numeric_table_content(sent):
                     continue
                 chunk = ChunkNode(
                     id=self._generate_id(sent, "sentence", sent_idx),

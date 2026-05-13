@@ -713,7 +713,7 @@ async def chat_sheet_rag_stream(request: ChatV2Request):
             for i, word in enumerate(words):
                 chunk = word + (" " if i < len(words) - 1 else "")
                 yield f"data: {json.dumps({'token': chunk, 'done': False})}\n\n"
-                await asyncio.sleep(0.05)
+              
             
             # Add assistant response to history
             chat_history.add_message(request.conversation_id, "assistant", response_text)

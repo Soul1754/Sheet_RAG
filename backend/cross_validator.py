@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 from collections import defaultdict
 import numpy as np
+import re
 
 
 @dataclass
@@ -143,6 +144,22 @@ class CrossLayerValidator:
         
         return parents
     
+    def _is_numeric_content(self, text: str) -> bool:
+        """
+        Detect if text is primarily numeric (table data, benchmarks, metrics).
+        This helps deprioritize numeric content that might appear in multiple layers.
+        """
+        if not text or len(text) < 10:
+            return False
+        
+        # Count numeric patterns
+        numbers = re.findall(r'\d+\.?\d*', text)
+        words = text.split()
+        
+        # If >40% of content is numbers, it's likely table data
+        numeric_ratio = len(numbers) / max(len(words), 1)
+        return numeric_ratio > 0.4
+    
     def _find_supporting_chunks(
         self,
         target_chunk: ScoredChunk,
@@ -186,6 +203,11 @@ class CrossLayerValidator:
                 # Boost similarity for related chunks
                 if is_related:
                     similarity = min(1.0, similarity + 0.2)
+                
+                # PENALIZE numeric content: deprioritize table-like chunks
+                # Even if they appear in multiple layers, they're not semantic evidence
+                if self._is_numeric_content(candidate.text):
+                    similarity = similarity * 0.6  # 40% penalty for numeric content
                 
                 if similarity > best_similarity:
                     best_similarity = similarity
