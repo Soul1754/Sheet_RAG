@@ -13,8 +13,9 @@ across abstraction levels, reducing hallucinations.
 
 import os
 import time
+from collections import defaultdict
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 from llama_index.core import (
@@ -37,6 +38,7 @@ from cross_validator import (
     create_scored_chunks_from_nodes
 )
 from rag_pipeline_logger import log_sheet_rag_query
+from text_quality import is_boilerplate
 
 
 class SheetRAGEngine:
@@ -72,8 +74,9 @@ class SheetRAGEngine:
         # Initialize processing components
         self.chunker = HierarchicalChunker()
         self.validator = CrossLayerValidator(
-            support_threshold=0.5,
-            min_layers=2
+            support_threshold=settings.cross_validation_threshold,
+            min_layers=settings.cross_validation_min_layers,
+            require_cross_file_support=settings.cross_validation_require_cross_file,
         )
         
         print("[OK] Sheet RAG Engine initialized with 4 layers")
@@ -211,6 +214,165 @@ class SheetRAGEngine:
         
         return create_scored_chunks_from_nodes(nodes, layer)
     
+    def _static_rerank_penalty(self, chunk: ScoredChunk) -> float:
+        """
+        Penalize chunks that often rank highly for broad queries but rarely answer them:
+        preprint boilerplate, reference lists, bibliography-style sections.
+        """
+        if not getattr(settings, "sheet_rag_boilerplate_penalty_enabled", True):
+            return 0.0
+        if is_boilerplate(chunk.text or "", chunk.metadata):
+            return max(0.45, float(getattr(settings, "sheet_rag_boilerplate_penalty", 0.22)))
+        return 0.0
+
+    def _rerank_validated_for_query(
+        self,
+        validated: List[ValidatedResult],
+    ) -> Tuple[List[ValidatedResult], Dict[str, Any]]:
+        """
+        Re-rank cross-validated hits by query relevance (primary retrieval score)
+        and validation confidence. Pure confidence ordering can surface bibliography
+        or boilerplate that agrees across layers but does not match the question.
+        """
+        if not validated:
+            return [], {}
+        wr = float(getattr(settings, "sheet_rag_rerank_retrieval_weight", 0.72))
+        wc = float(getattr(settings, "sheet_rag_rerank_confidence_weight", 0.28))
+        s = wr + wc
+        if s <= 0:
+            wr, wc = 0.72, 0.28
+        else:
+            wr, wc = wr / s, wc / s
+        min_rs = float(getattr(settings, "sheet_rag_min_primary_retrieval_score", 0.0))
+        pool = (
+            [r for r in validated if r.primary_chunk.score >= min_rs]
+            if min_rs > 0
+            else list(validated)
+        )
+        filter_exhausted = bool(min_rs > 0 and not pool)
+        if not pool:
+            pool = list(validated)
+
+        mode = (getattr(settings, "sheet_rag_context_ranking", None) or "query_first").strip().lower()
+        if mode not in ("query_first", "weighted_blend"):
+            mode = "query_first"
+
+        def penalty(r: ValidatedResult) -> float:
+            return self._static_rerank_penalty(r.primary_chunk)
+
+        def combined_weighted(r: ValidatedResult) -> float:
+            pen = penalty(r)
+            return (
+                wr * float(r.primary_chunk.score)
+                + wc * float(r.confidence_score)
+                - pen
+            )
+
+        def query_adjusted_score(r: ValidatedResult) -> float:
+            return float(r.primary_chunk.score) - penalty(r)
+
+        if mode == "weighted_blend":
+            ranked = sorted(pool, key=combined_weighted, reverse=True)
+            method_label = "retrieval_confidence_weighted_sum_minus_penalties"
+        else:
+            ranked = sorted(
+                pool,
+                key=lambda r: (query_adjusted_score(r), float(r.confidence_score)),
+                reverse=True,
+            )
+            method_label = "query_first_retrieval_minus_penalties_then_confidence"
+
+        meta = {
+            "context_ranking": mode,
+            "method": method_label,
+            "retrieval_weight": wr,
+            "confidence_weight": wc,
+            "min_primary_retrieval_score": min_rs,
+            "filter_exhausted_fell_back_to_all": filter_exhausted,
+            "boilerplate_penalty_enabled": getattr(
+                settings, "sheet_rag_boilerplate_penalty_enabled", True
+            ),
+            "max_chunks_per_paper": int(
+                getattr(settings, "sheet_rag_max_chunks_per_paper", 2)
+            ),
+            "rank_preview": [
+                {
+                    "chunk_id": r.primary_chunk.chunk_id,
+                    "level": r.primary_chunk.level,
+                    "file_name": (r.primary_chunk.metadata or {}).get("file_name"),
+                    "retrieval_score": float(r.primary_chunk.score),
+                    "confidence": float(r.confidence_score),
+                    "penalty": penalty(r),
+                    "query_adjusted_retrieval": query_adjusted_score(r),
+                    "combined_weighted": combined_weighted(r),
+                }
+                for r in ranked[:12]
+            ],
+        }
+        return ranked, meta
+
+    def _select_diverse_context_chunks(
+        self,
+        validated_ordered: List[ValidatedResult],
+        top_k: int,
+    ) -> List[ScoredChunk]:
+        """
+        Walk re-ranked validated results and take primaries until top_k,
+        enforcing a per-PDF cap so one boilerplate-heavy paper cannot fill the window.
+        """
+        max_per = int(getattr(settings, "sheet_rag_max_chunks_per_paper", 2))
+        if max_per <= 0 or top_k <= 0:
+            return [r.primary_chunk for r in validated_ordered[:top_k]]
+        by_file: Dict[str, int] = defaultdict(int)
+        out: List[ScoredChunk] = []
+        seen_ids: set = set()
+        for r in validated_ordered:
+            pid = r.primary_chunk.chunk_id
+            if pid in seen_ids:
+                continue
+            fn = (r.primary_chunk.metadata or {}).get("file_name") or ""
+            if by_file[fn] >= max_per:
+                continue
+            out.append(r.primary_chunk)
+            seen_ids.add(pid)
+            by_file[fn] += 1
+            if len(out) >= top_k:
+                return out
+        for r in validated_ordered:
+            pid = r.primary_chunk.chunk_id
+            if pid in seen_ids:
+                continue
+            out.append(r.primary_chunk)
+            seen_ids.add(pid)
+            if len(out) >= top_k:
+                break
+        return out
+
+    def _fill_from_paragraph_query_order(
+        self,
+        layer_results: Dict[str, List[ScoredChunk]],
+        already: List[ScoredChunk],
+        need: int,
+    ) -> List[ScoredChunk]:
+        """Add paragraphs in strict query-retrieval order (minus penalties) up to `need` chunks."""
+        if need <= 0:
+            return []
+        seen = {c.chunk_id for c in already}
+        paras = list(layer_results.get("paragraph") or [])
+        paras.sort(
+            key=lambda c: float(c.score) - self._static_rerank_penalty(c),
+            reverse=True,
+        )
+        extra: List[ScoredChunk] = []
+        for c in paras:
+            if c.chunk_id in seen:
+                continue
+            seen.add(c.chunk_id)
+            extra.append(c)
+            if len(extra) >= need:
+                break
+        return extra
+    
     def query(
         self,
         query_text: str,
@@ -247,8 +409,19 @@ class SheetRAGEngine:
             )
             return empty
         
-        # Check cache
-        cache_key = f"sheet_rag:{query_text}:{top_k}:{use_cross_validation}"
+        # Check cache (include re-rank settings so ordering stays consistent with config)
+        _rw = float(getattr(settings, "sheet_rag_rerank_retrieval_weight", 0.72))
+        _cw = float(getattr(settings, "sheet_rag_rerank_confidence_weight", 0.28))
+        _minr = float(getattr(settings, "sheet_rag_min_primary_retrieval_score", 0.0))
+        _mfp = int(getattr(settings, "sheet_rag_max_chunks_per_paper", 2))
+        _bpen = 1 if getattr(settings, "sheet_rag_boilerplate_penalty_enabled", True) else 0
+        _pm = int(getattr(settings, "sheet_rag_retrieval_pool_multiplier", 4))
+        _cr = (getattr(settings, "sheet_rag_context_ranking", None) or "query_first").strip().lower()
+        _cfs = 1 if getattr(settings, "cross_validation_require_cross_file", True) else 0
+        cache_key = (
+            f"sheet_rag:{query_text}:{top_k}:{use_cross_validation}:"
+            f"rr{_rw:.3f}_rc{_cw:.3f}_minr{_minr:.3f}_mfp{_mfp}_bp{_bpen}_pm{_pm}_cr{_cr}_cfs{_cfs}"
+        )
         cached = self.cache.get_query_result(cache_key)
         if cached:
             print("[OK] Cache hit for Sheet RAG query")
@@ -265,31 +438,62 @@ class SheetRAGEngine:
         
         print(f"[SEARCH] Querying all {len(self.LAYERS)} layers...")
         
-        # Search all layers
+        mult = max(1, int(getattr(settings, "sheet_rag_retrieval_pool_multiplier", 4)))
+        cap = max(top_k, int(getattr(settings, "sheet_rag_retrieval_pool_max", 40)))
+        search_k = min(cap, max(top_k, top_k * mult))
+
+        # Search all layers (wide pool so chunks ranked ~6–20 for the query can still compete)
         layer_results: Dict[str, List[ScoredChunk]] = {}
         for layer in self.LAYERS:
-            layer_results[layer] = self._search_layer(layer, query_text, top_k)
-            print(f"  [STATS] {layer}: {len(layer_results[layer])} results")
+            layer_results[layer] = self._search_layer(layer, query_text, search_k)
+            print(f"  [STATS] {layer}: {len(layer_results[layer])} results (pool_k={search_k})")
         
         # Cross-validate if enabled
         if use_cross_validation:
             validated_results = self.validator.validate_bidirectional(layer_results)
+            rerank_meta: Dict[str, Any] = {}
+            if validated_results:
+                validated_results, rerank_meta = self._rerank_validated_for_query(
+                    validated_results
+                )
             validation_summary = self.validator.get_validation_summary(validated_results)
+            if rerank_meta:
+                validation_summary["rerank"] = rerank_meta
             
             print(f"[OK] Cross-validation: {len(validated_results)} validated results")
             
             # Use validated results for response generation
             if validated_results:
-                context_chunks = [r.primary_chunk for r in validated_results[:top_k]]
+                context_chunks = self._select_diverse_context_chunks(
+                    validated_results, top_k
+                )
+                if len(context_chunks) < top_k:
+                    fill = self._fill_from_paragraph_query_order(
+                        layer_results,
+                        context_chunks,
+                        top_k - len(context_chunks),
+                    )
+                    if fill:
+                        context_chunks = context_chunks + fill
+                        validation_summary["paragraph_gap_fill"] = len(fill)
             else:
                 # Fallback to unvalidated results if nothing passes validation
-                context_chunks = layer_results.get("paragraph", [])[:top_k]
+                context_chunks = self._fill_from_paragraph_query_order(
+                    layer_results, [], top_k
+                )
                 validation_summary["fallback_used"] = True
         else:
-            # No validation - use paragraph layer as primary
-            context_chunks = layer_results.get("paragraph", [])[:top_k]
+            # No validation — still order strictly by query retrieval score (minus penalties)
+            paras = list(layer_results.get("paragraph") or [])
+            paras.sort(
+                key=lambda c: float(c.score) - self._static_rerank_penalty(c),
+                reverse=True,
+            )
+            context_chunks = paras[:top_k]
             validated_results = []
             validation_summary = {"validation_disabled": True}
+
+        validation_summary["retrieval_pool_per_layer"] = search_k
         
         # Generate response using LLM
         response = self._generate_response(query_text, context_chunks)

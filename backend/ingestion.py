@@ -4,6 +4,22 @@ from llama_index.core import Document, SimpleDirectoryReader
 from typing import List
 import re
 
+from text_quality import strip_reference_suffix
+
+
+def document_page_count(documents: List[Document]) -> int:
+    """Logical page count: PyMuPDF returns one merged Document with num_pages metadata."""
+    if not documents:
+        return 0
+    n = (documents[0].metadata or {}).get("num_pages")
+    if n is not None:
+        try:
+            return int(n)
+        except (TypeError, ValueError):
+            pass
+    return len(documents)
+
+
 def normalize_arxiv_id(arxiv_id: str) -> str:
     """
     Normalize ArXiv ID by removing version numbers and cleaning format.
@@ -70,17 +86,80 @@ def download_paper(arxiv_id: str, download_dir: str = "data/papers") -> str:
         
     return file_path
 
-def load_documents(file_path: str) -> List[Document]:
-    """
-    Loads documents from a PDF file.
-    """
-    # SimpleDirectoryReader handles PDFs automatically if pypdf is installed.
-    # llama-index usually comes with pypdf or we might need to install it.
-    # The user requirements didn't specify pypdf, but it's a common dependency.
-    # We will assume it's there or add it.
+
+def _load_pdf_pymupdf(file_path: str) -> List[Document]:
+    import pymupdf
+
+    doc = pymupdf.open(file_path)
+    n_pages = len(doc)
+    page_texts: List[str] = []
+    try:
+        for i in range(n_pages):
+            page = doc.load_page(i)
+            # sort=True improves reading order on two-column academic PDFs
+            try:
+                t = page.get_text("text", sort=True) or ""
+            except TypeError:
+                t = page.get_text("text") or ""
+            if t.strip():
+                page_texts.append(t.strip())
+    finally:
+        doc.close()
+
+    body = "\n\n".join(page_texts)
+    body = strip_reference_suffix(body)
+    base = os.path.basename(file_path)
+    meta = {
+        "file_name": base,
+        "file_path": file_path,
+        "num_pages": len(page_texts) if page_texts else n_pages,
+    }
+    return [Document(text=body, metadata=meta)]
+
+
+def _load_pdf_simple_directory(file_path: str) -> List[Document]:
     reader = SimpleDirectoryReader(input_files=[file_path])
     documents = reader.load_data()
-    return documents
+    merged = "\n\n".join((d.text or "").strip() for d in documents if (d.text or "").strip())
+    merged = strip_reference_suffix(merged)
+    base = os.path.basename(file_path)
+    return [
+        Document(
+            text=merged,
+            metadata={
+                "file_name": base,
+                "file_path": file_path,
+                "num_pages": len(documents),
+            },
+        )
+    ]
+
+
+def load_documents(file_path: str) -> List[Document]:
+    """
+    Load a PDF into one LlamaIndex Document (full body, stripped references tail).
+
+    Prefers PyMuPDF (pymupdf) for cleaner multi-column text; falls back to SimpleDirectoryReader.
+    """
+    if not file_path.lower().endswith(".pdf"):
+        reader = SimpleDirectoryReader(input_files=[file_path])
+        return reader.load_data()
+
+    try:
+        from config import settings
+
+        use_fitz = bool(getattr(settings, "use_pymupdf_for_pdf", True))
+    except Exception:
+        use_fitz = True
+
+    if use_fitz:
+        try:
+            return _load_pdf_pymupdf(file_path)
+        except Exception as e:
+            print(f"[WARN] PyMuPDF load failed ({e}), falling back to SimpleDirectoryReader")
+
+    return _load_pdf_simple_directory(file_path)
+
 
 def search_papers(query: str, max_results: int = 10, category: str = None, year: str = None):
     """
@@ -137,6 +216,6 @@ if __name__ == "__main__":
         path = download_paper(pid)
         print(f"Downloaded to {path}")
         docs = load_documents(path)
-        print(f"Loaded {len(docs)} pages")
+        print(f"Loaded {document_page_count(docs)} pages ({len(docs)} document(s))")
     except Exception as e:
         print(f"Error: {e}")

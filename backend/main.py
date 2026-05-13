@@ -7,7 +7,7 @@ import traceback
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from ingestion import download_paper, load_documents, search_papers
+from ingestion import download_paper, load_documents, search_papers, document_page_count
 from rag_engine import RAGEngine
 from cache import cache
 from celery.result import AsyncResult
@@ -214,10 +214,10 @@ def ingest_paper(request: IngestRequest):
                 title=paper_metadata.get('title', 'Unknown'),
                 authors=paper_metadata.get('authors', []),
                 summary=paper_metadata.get('summary', ''),
-                pages=len(documents)
+                pages=document_page_count(documents)
             )
         
-        return {"status": "success", "message": f"Ingested {request.arxiv_id}", "pages": len(documents)}
+        return {"status": "success", "message": f"Ingested {request.arxiv_id}", "pages": document_page_count(documents)}
     except Exception as e:
         print(f"Error ingesting: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -237,8 +237,8 @@ def ingest_batch(request: BatchIngestRequest):
             path = download_paper(arxiv_id)
             documents = load_documents(path)
             rag.add_documents(documents)
-            total_pages += len(documents)
-            results.append({"arxiv_id": arxiv_id, "pages": len(documents)})
+            total_pages += document_page_count(documents)
+            results.append({"arxiv_id": arxiv_id, "pages": document_page_count(documents)})
             
             # Add to library
             if paper_metadata:
@@ -247,7 +247,7 @@ def ingest_batch(request: BatchIngestRequest):
                     title=paper_metadata.get('title', 'Unknown'),
                     authors=paper_metadata.get('authors', []),
                     summary=paper_metadata.get('summary', ''),
-                    pages=len(documents)
+                    pages=document_page_count(documents)
                 )
         
         return {"status": "success", "message": f"Ingested {len(request.arxiv_ids)} papers", "total_pages": total_pages, "results": results}
@@ -302,7 +302,7 @@ async def upload_paper(files: List[UploadFile] = File(...)):
             print(f"[SYNC] Syncing to Hierarchical Graph (Sheet) Matrix...")
             sheet_rag.add_documents(documents)
             
-            total_pages += len(documents)
+            total_pages += document_page_count(documents)
             
             # 4. Database Persistence
             print(f"[DATABASE] Committing metadata to Knowledge Vault...")
@@ -311,7 +311,7 @@ async def upload_paper(files: List[UploadFile] = File(...)):
                 title=file.filename.replace('.pdf', ''),
                 authors=["Local Upload"],
                 summary=f"Locally synthesized intelligence unit on {datetime.now().strftime('%Y-%m-%d %H:%M')}.",
-                pages=len(documents)
+                pages=document_page_count(documents)
             )
             
             results.append({"id": local_id, "filename": file.filename})
@@ -768,7 +768,7 @@ def ingest_paper_sheet_rag(request: IngestRequest):
                 title=paper_metadata.get('title', 'Unknown'),
                 authors=paper_metadata.get('authors', []),
                 summary=paper_metadata.get('summary', ''),
-                pages=len(documents)
+                pages=document_page_count(documents)
             )
         
         stats = sheet_rag.get_stats()
@@ -776,7 +776,7 @@ def ingest_paper_sheet_rag(request: IngestRequest):
         return {
             "status": "success",
             "message": f"Ingested {request.arxiv_id} into Sheet RAG",
-            "pages": len(documents),
+            "pages": document_page_count(documents),
             "sheet_rag_stats": stats
         }
     except Exception as e:
@@ -805,8 +805,8 @@ def ingest_batch_sheet_rag(request: BatchIngestRequest):
             # Also add to standard RAG
             rag.add_documents(documents)
             
-            total_pages += len(documents)
-            results.append({"arxiv_id": arxiv_id, "pages": len(documents)})
+            total_pages += document_page_count(documents)
+            results.append({"arxiv_id": arxiv_id, "pages": document_page_count(documents)})
             
             # Add to library
             if paper_metadata:
@@ -815,7 +815,7 @@ def ingest_batch_sheet_rag(request: BatchIngestRequest):
                     title=paper_metadata.get('title', 'Unknown'),
                     authors=paper_metadata.get('authors', []),
                     summary=paper_metadata.get('summary', ''),
-                    pages=len(documents)
+                    pages=document_page_count(documents)
                 )
         
         return {

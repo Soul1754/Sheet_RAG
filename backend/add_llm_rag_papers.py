@@ -8,7 +8,7 @@ import requests
 from tqdm import tqdm
 from llama_index.core import StorageContext, VectorStoreIndex
 
-from ingestion import search_papers, load_documents, normalize_arxiv_id
+from ingestion import search_papers, load_documents, normalize_arxiv_id, document_page_count
 from papers_library import papers_library
 from rag_engine import RAGEngine
 from sheet_rag_engine import SheetRAGEngine
@@ -175,7 +175,7 @@ def ingest_papers(limit: int) -> None:
                 title=title,
                 authors=paper.get("authors", []),
                 summary=paper.get("summary", ""),
-                pages=len(documents)
+                pages=document_page_count(documents)
             )
         except Exception as exc:
             tqdm.write(f"Failed to ingest {arxiv_id}: {exc}")

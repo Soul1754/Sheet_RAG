@@ -15,6 +15,9 @@ from llama_index.core.node_parser import SentenceSplitter
 import re
 import hashlib
 
+from config import settings
+from text_quality import strip_reference_suffix, should_reject_chunk_for_indexing
+
 
 @dataclass
 class ChunkNode:
@@ -61,6 +64,12 @@ class HierarchicalChunker:
             config: Override default layer configurations
         """
         self.config = {**self.LAYER_CONFIG, **(config or {})}
+        self.citation_reject_ratio = float(
+            self.config.get(
+                "chunk_citation_reject_ratio",
+                getattr(settings, "chunk_citation_reject_ratio", 0.35),
+            )
+        )
         
         # Initialize sentence splitter for fine-grained splitting
         self.sentence_splitter = SentenceSplitter(
@@ -237,8 +246,15 @@ class HierarchicalChunker:
         Returns:
             Dictionary with keys for each level containing list of ChunkNodes
         """
-        text = document.text
+        text = strip_reference_suffix(document.text or "")
         doc_metadata = document.metadata or {}
+        if not text.strip():
+            return {
+                "sentences": [],
+                "paragraphs": [],
+                "sections": [],
+                "summaries": [],
+            }
         
         result = {
             "sentences": [],
@@ -260,6 +276,8 @@ class HierarchicalChunker:
                 continue
                 
             section_text = f"{section['title']}\n\n{section['content']}"
+            if should_reject_chunk_for_indexing(section_text, self.citation_reject_ratio):
+                continue
             chunk = ChunkNode(
                 id=self._generate_id(section_text, "section", idx),
                 text=section_text,
@@ -281,6 +299,8 @@ class HierarchicalChunker:
             paragraphs = self._split_into_paragraphs(section_chunk.text)
             for para in paragraphs:
                 if len(para) < 30:  # Skip very short paragraphs
+                    continue
+                if should_reject_chunk_for_indexing(para, self.citation_reject_ratio):
                     continue
                 chunk = ChunkNode(
                     id=self._generate_id(para, "paragraph", para_idx),
@@ -308,6 +328,8 @@ class HierarchicalChunker:
                     continue
                 # Skip numeric table-like content
                 if self._is_numeric_table_content(sent):
+                    continue
+                if should_reject_chunk_for_indexing(sent, self.citation_reject_ratio):
                     continue
                 chunk = ChunkNode(
                     id=self._generate_id(sent, "sentence", sent_idx),
@@ -376,7 +398,12 @@ def create_hierarchical_chunks(documents: List[Document], config: Optional[Dict]
     Returns:
         Dictionary mapping level names to lists of Documents ready for embedding
     """
-    chunker = HierarchicalChunker(config)
+    merged = dict(config or {})
+    merged.setdefault(
+        "chunk_citation_reject_ratio",
+        getattr(settings, "chunk_citation_reject_ratio", 0.35),
+    )
+    chunker = HierarchicalChunker(merged)
     chunks = chunker.chunk_documents(documents)
     
     return {

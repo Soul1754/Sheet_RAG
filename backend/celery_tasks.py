@@ -1,5 +1,5 @@
 from celery_app import celery_app
-from ingestion import download_paper, load_documents
+from ingestion import download_paper, load_documents, document_page_count
 from rag_engine import RAGEngine
 from typing import List
 
@@ -51,7 +51,7 @@ def ingest_paper_task(self, arxiv_id: str):
         return {
             'status': 'success',
             'arxiv_id': arxiv_id,
-            'pages': len(documents),
+            'pages': document_page_count(documents),
             'message': f'Successfully ingested {arxiv_id}'
         }
     
@@ -90,7 +90,7 @@ def ingest_batch_task(self, arxiv_ids: List[str]):
             
             results.append({
                 'arxiv_id': arxiv_id,
-                'pages': len(documents),
+                'pages': document_page_count(documents),
                 'status': 'success'
             })
         

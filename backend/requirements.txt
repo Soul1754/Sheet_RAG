@@ -8,6 +8,7 @@ arxiv
 networkx
 python-dotenv
 pypdf
+pymupdf
 chromadb
 redis
 pydantic-settings

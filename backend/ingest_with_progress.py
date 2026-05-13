@@ -5,7 +5,7 @@ from typing import List
 from tqdm import tqdm
 from llama_index.core import StorageContext, VectorStoreIndex
 
-from ingestion import download_paper, load_documents, search_papers
+from ingestion import download_paper, load_documents, search_papers, document_page_count
 from sheet_rag_engine import SheetRAGEngine
 from papers_library import papers_library
 from hierarchical_chunker import create_hierarchical_chunks
@@ -103,7 +103,7 @@ def ingest_with_progress(arxiv_ids: List[str]) -> None:
                 title=metadata.get("title", "Unknown"),
                 authors=metadata.get("authors", []),
                 summary=metadata.get("summary", ""),
-                pages=len(documents),
+                pages=document_page_count(documents),
             )
 
     stats = engine.get_stats()

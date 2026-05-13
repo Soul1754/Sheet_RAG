@@ -8,6 +8,7 @@ Only returns results that have supporting evidence at multiple granularity level
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 from collections import defaultdict
+import os
 import numpy as np
 import re
 
@@ -63,7 +64,8 @@ class CrossLayerValidator:
         self,
         layer_weights: Optional[Dict[str, float]] = None,
         support_threshold: float = DEFAULT_SUPPORT_THRESHOLD,
-        min_layers: int = DEFAULT_MIN_LAYERS
+        min_layers: int = DEFAULT_MIN_LAYERS,
+        require_cross_file_support: bool = True,
     ):
         """
         Initialize the cross-layer validator.
@@ -72,10 +74,22 @@ class CrossLayerValidator:
             layer_weights: Custom weights for each layer's confidence contribution
             support_threshold: Minimum similarity score to consider as supporting evidence
             min_layers: Minimum number of layers that must agree
+            require_cross_file_support: If True, supporting chunks must come from a different
+                PDF (file_name) than the primary; same-document parent/child does not count.
         """
         self.layer_weights = layer_weights or self.DEFAULT_LAYER_WEIGHTS
         self.support_threshold = support_threshold
         self.min_layers = min_layers
+        self.require_cross_file_support = require_cross_file_support
+
+    @staticmethod
+    def _source_file_key(metadata: Optional[Dict[str, Any]]) -> str:
+        m = metadata or {}
+        fn = m.get("file_name") or ""
+        if fn:
+            return os.path.basename(str(fn))
+        fp = m.get("file_path") or ""
+        return os.path.basename(str(fp)) if fp else ""
     
     def _compute_text_similarity(self, text1: str, text2: str) -> float:
         """
@@ -183,13 +197,13 @@ class CrossLayerValidator:
             best_similarity = 0.0
             
             for candidate in chunks:
-                # First check: Is this a parent/child relationship?
-                is_related = (
-                    candidate.chunk_id == target_chunk.parent_id or
-                    target_chunk.chunk_id in (candidate.metadata.get("children_ids", []))
-                )
-                
-                # Compute similarity
+                if self.require_cross_file_support:
+                    pk = self._source_file_key(target_chunk.metadata)
+                    ck = self._source_file_key(candidate.metadata)
+                    if pk and ck and pk == ck:
+                        continue
+
+                # Compute similarity (no same-document parent/child boost — that is circular)
                 if use_embeddings and embeddings:
                     target_emb = embeddings.get(target_chunk.chunk_id)
                     candidate_emb = embeddings.get(candidate.chunk_id)
@@ -199,10 +213,6 @@ class CrossLayerValidator:
                         similarity = self._compute_text_similarity(target_chunk.text, candidate.text)
                 else:
                     similarity = self._compute_text_similarity(target_chunk.text, candidate.text)
-                
-                # Boost similarity for related chunks
-                if is_related:
-                    similarity = min(1.0, similarity + 0.2)
                 
                 # PENALIZE numeric content: deprioritize table-like chunks
                 # Even if they appear in multiple layers, they're not semantic evidence
