@@ -3,10 +3,11 @@
 import { useState, useRef } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Plus, Sparkles, RefreshCw, Layers, CheckCircle2, Upload, FileText, X, Terminal } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 export function AdminPanel() {
     const [loading, setLoading] = useState(false);
@@ -20,7 +21,6 @@ export function AdminPanel() {
             const files = Array.from(e.target.files).filter(f => 
                 f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
             );
-            console.log("📂 [CLIENT] Staging units for synthesis:", files.map(f => f.name));
             setSelectedFiles(prev => [...prev, ...files]);
         }
     };
@@ -33,29 +33,24 @@ export function AdminPanel() {
         if (selectedFiles.length === 0) return;
         setLoading(true);
         setStatus(null);
-        console.log("🧬 [CLIENT] Initiating synthesis for units:", selectedFiles.map(f => f.name));
         
         try {
             const res = await api.uploadPapers(selectedFiles);
-            console.log("📡 [CLIENT] API Response received:", res.data);
-            
             if (res.data.success) {
                 setStatus({
                     type: 'success',
                     message: res.data.message || `Successfully synthesized ${selectedFiles.length} units.`
                 });
                 setSelectedFiles([]);
-                
-                // Trigger cross-component matrix refresh
                 window.dispatchEvent(new Event('paper-ingested'));
             } else {
                 throw new Error(res.data.message || 'Matrix synthesis failed');
             }
-        } catch (error: any) {
-            console.error("🚨 [CLIENT] Synthesis error details:", error.response?.data || error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'File synthesis failed.';
             setStatus({
                 type: 'error',
-                message: error.response?.data?.detail || error.message || 'File synthesis failed. Ensure they are valid PDFs.'
+                message: errorMessage
             });
         }
         setLoading(false);
@@ -64,112 +59,123 @@ export function AdminPanel() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-12 h-12 rounded-full bg-primary/5 hover:bg-primary/10 text-primary/40 hover:text-primary transition-all active-compress border border-primary/10">
-                    <Plus className="w-6 h-6" />
-                </Button>
+                <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left">
+                    <Plus className="w-5 h-5" />
+                    <span className="text-sm font-semibold tracking-tight">Intelligence Ingest</span>
+                </button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-2xl bg-background/80 backdrop-blur-3xl border-l border-white/40 p-0 physics-spring">
-                <div className="h-full flex flex-col p-12 overflow-hidden stagger-children">
-                    <SheetHeader className="mb-10">
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-16 h-16 rounded-[2rem] bg-primary flex items-center justify-center shadow-premium border border-white/20">
-                                <Plus className="w-8 h-8 text-white" />
-                            </div>
-                            <div>
-                                <SheetTitle className="text-4xl font-black tracking-tighter uppercase transition-all duration-700">Intelligence Ingest</SheetTitle>
-                                <SheetDescription className="text-base font-black text-primary/40 uppercase tracking-[0.2em] mt-1">Local Library Synthesis</SheetDescription>
-                            </div>
-                        </div>
-                        <p className="text-lg font-medium text-muted-foreground/60 leading-relaxed max-w-sm stagger-1">
+            <SheetContent 
+                side="right" 
+                className="w-full sm:max-w-xl md:max-w-2xl bg-white/95 backdrop-blur-xl border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
+            >
+                <div className="shrink-0 px-6 sm:px-10 py-8 border-b border-border flex items-center gap-5 safe-scroll">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg border border-primary/20 shrink-0">
+                        <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                    </div>
+                    <div>
+                        <SheetTitle className="text-2xl sm:text-3xl font-black tracking-tighter">Intelligence Ingest</SheetTitle>
+                        <SheetDescription className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mt-1">Local Library Synthesis</SheetDescription>
+                    </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain p-6 sm:p-10 space-y-8 momentum-scroll min-h-0">
+                    <div className="space-y-4">
+                        <p className="text-sm sm:text-base font-medium text-muted-foreground/60 leading-relaxed">
                             Ingest your private research collection directly into the neural matrix for cross-document synthesis.
                         </p>
-                    </SheetHeader>
 
-                    {/* RAG Architecture Sync */}
-                    <div className="p-1 surface-panel rounded-3xl mb-8 flex items-center justify-between px-6 py-4 stagger-2">
-                        <div className="flex items-center gap-4">
-                            <Layers className="w-5 h-5 text-primary opacity-40" />
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-foreground/40 leading-none">RAG Architecture</span>
-                                <span className="text-sm font-black text-foreground/80">{useSheetRAG ? 'Hierarchical Graph' : 'Standard Vector'}</span>
+                        <div className="p-4 sm:p-5 bg-black/5 rounded-2xl border border-border flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Layers className="w-4 h-4 text-primary opacity-40" />
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 leading-none mb-1">Architecture</span>
+                                    <span className="text-xs font-bold text-foreground">{useSheetRAG ? 'Hierarchical Graph' : 'Standard Vector'}</span>
+                                </div>
                             </div>
+                            <Switch
+                                checked={useSheetRAG}
+                                onCheckedChange={setUseSheetRAG}
+                                className="data-[state=checked]:bg-primary"
+                            />
                         </div>
-                        <Switch
-                            checked={useSheetRAG}
-                            onCheckedChange={setUseSheetRAG}
-                            className="data-[state=checked]:bg-primary h-7 w-12"
-                        />
                     </div>
 
-                    <div className="flex-1 flex flex-col min-h-0 space-y-8 stagger-3">
-                        {/* Pure Local Upload Surface */}
-                        <div 
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex-1 flex flex-col items-center justify-center p-12 rounded-[2.5rem] border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group animate-in zoom-in-95 duration-500"
-                        >
-                            <input 
-                                type="file" 
-                                multiple 
-                                accept=".pdf" 
-                                className="hidden" 
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                            />
-                            <div className="w-24 h-24 rounded-[2.5rem] bg-white flex items-center justify-center shadow-premium group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 physics-spring mb-8">
-                                <Upload className="w-12 h-12 text-primary" />
-                            </div>
-                            <h4 className="text-2xl font-black tracking-tight mb-2">Neural Binary Upload</h4>
-                            <p className="text-sm font-medium text-muted-foreground/60">Drop multiple PDFs or click to explore</p>
+                    <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex flex-col items-center justify-center p-8 sm:p-12 rounded-3xl border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group"
+                    >
+                        <input 
+                            type="file" 
+                            multiple 
+                            accept=".pdf" 
+                            className="hidden" 
+                            ref={fileInputRef}
+                            onChange={handleFileSelect}
+                        />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-all mb-6">
+                            <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
                         </div>
+                        <h4 className="text-lg sm:text-xl font-black tracking-tight mb-1">Neural Binary Upload</h4>
+                        <p className="text-xs font-medium text-muted-foreground/50">Drop PDFs or click to explore</p>
+                    </div>
 
+                    <AnimatePresence>
                         {selectedFiles.length > 0 && (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
+                            <motion.div 
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="space-y-4 overflow-hidden"
+                            >
                                 <div className="flex items-center justify-between px-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">{selectedFiles.length} Units Staged</span>
-                                    </div>
-                                    <Button variant="ghost" className="h-8 px-3 text-[9px] font-black uppercase tracking-widest hover:text-destructive" onClick={() => setSelectedFiles([])}>Discard All</Button>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">{selectedFiles.length} Units Staged</span>
+                                    <button className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-destructive transition-colors" onClick={() => setSelectedFiles([])}>Discard All</button>
                                 </div>
                                 
-                                <ScrollArea className="max-h-56 pr-4">
-                                    <div className="space-y-2">
-                                        {selectedFiles.map((file, i) => (
-                                            <div key={i} className="flex items-center justify-between p-4 rounded-2xl bg-white/40 border border-white/60 group/file hover:bg-white transition-all">
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <FileText className="w-4 h-4 text-primary shrink-0 opacity-40 group-hover/file:opacity-100" />
-                                                    <span className="text-xs font-black truncate text-foreground/70">{file.name}</span>
-                                                </div>
-                                                <button onClick={(e) => { e.stopPropagation(); removeFile(i); }} className="text-muted-foreground/20 hover:text-destructive transition-colors">
-                                                    <X className="w-4 h-4" />
-                                                </button>
+                                <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar overscroll-contain momentum-scroll">
+                                    {selectedFiles.map((file, i) => (
+                                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-black/5 border border-transparent hover:border-border hover:bg-white transition-all">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <FileText className="w-4 h-4 text-primary shrink-0 opacity-40" />
+                                                <span className="text-xs font-bold truncate text-foreground/70">{file.name}</span>
                                             </div>
-                                        ))}
-                                    </div>
-                                </ScrollArea>
+                                            <button onClick={(e) => { e.stopPropagation(); removeFile(i); }} className="text-muted-foreground/30 hover:text-destructive transition-colors">
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
 
                                 <Button 
                                     onClick={handleUpload}
                                     disabled={loading}
-                                    className="w-full h-20 rounded-[2rem] bg-primary hover:bg-primary text-white text-lg font-black tracking-tight shadow-premium emerald-glow-primary transition-all active-compress"
+                                    className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white text-base font-black tracking-tight shadow-xl active-compress"
                                 >
-                                    {loading ? <RefreshCw className="w-6 h-6 animate-spin mr-3" /> : <Sparkles className="w-6 h-6 mr-3" />}
+                                    {loading ? <RefreshCw className="w-5 h-5 animate-spin mr-3" /> : <Sparkles className="w-5 h-5 mr-3" />}
                                     {loading ? 'SYNTHESIZING...' : 'START LOCAL INGEST'}
                                 </Button>
-                            </div>
+                            </motion.div>
                         )}
-                    </div>
+                    </AnimatePresence>
 
-                    {/* Status Feedback */}
-                    {status && (
-                        <div className={`mt-8 p-6 rounded-[2rem] border flex items-center gap-5 slide-in-from-bottom-4 animate-in duration-500 physics-spring shrink-0 ${status.type === 'success' ? 'bg-primary/5 border-primary/20 text-primary shadow-premium' : 'bg-destructive/5 border-destructive/20 text-destructive'}`}>
-                            {status.type === 'success' ? <CheckCircle2 className="w-6 h-6 shrink-0" /> : <Terminal className="w-6 h-6 shrink-0" />}
-                            <div className="flex flex-col">
-                                <span className="text-[9px] font-black uppercase tracking-widest opacity-40">Matrix System Log</span>
-                                <p className="text-sm font-black tracking-tight">{status.message}</p>
-                            </div>
-                        </div>
-                    )}
+                    <AnimatePresence>
+                        {status && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={cn(
+                                    "p-5 rounded-2xl border flex items-center gap-4 shadow-lg pb-10",
+                                    status.type === 'success' ? 'bg-primary/5 border-primary/20 text-primary' : 'bg-destructive/5 border-destructive/20 text-destructive'
+                                )}
+                            >
+                                {status.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <Terminal className="w-5 h-5 shrink-0" />}
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60">Matrix System Log</span>
+                                    <p className="text-xs font-black tracking-tight leading-tight break-words">{status.message}</p>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </SheetContent>
         </Sheet>

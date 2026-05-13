@@ -29,13 +29,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "http://research-assistant-backend:8002"
+        NEXT_PUBLIC_API_URL: "http://localhost:8002"
     container_name: research-assistant-frontend
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://research-assistant-backend:8002
+      - NEXT_PUBLIC_API_URL=http://localhost:8002
+      - INTERNAL_API_URL=http://research-assistant-backend:8002
     depends_on:
       - research-assistant-backend
     restart: unless-stopped

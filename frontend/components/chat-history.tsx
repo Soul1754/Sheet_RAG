@@ -5,7 +5,9 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { History, Trash2, RefreshCw, User, Bot, MessageSquare, Clock, ArrowRight, Zap } from 'lucide-react';
+import { History, Trash2, RefreshCw, User, Bot, MessageSquare, Clock, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface Message {
     role: string;
@@ -28,11 +30,14 @@ export function ChatHistory() {
     };
 
     useEffect(() => {
-        loadHistory();
+        const fetchHistory = async () => {
+            await loadHistory();
+        };
+        fetchHistory();
     }, []);
 
     const handleClear = async () => {
-        if (!confirm('Obliterate all transmission logs from this terminal matrix?')) return;
+        if (!confirm('Obliterate all transmission logs?')) return;
         try {
             await api.clearChatHistory(conversationId);
             setHistory([]);
@@ -42,96 +47,116 @@ export function ChatHistory() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-12 h-12 rounded-full hover:bg-primary/10 text-muted-foreground/30 hover:text-primary transition-all active-compress">
-                    <History className="w-6 h-6" />
-                </Button>
+                <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left">
+                    <History className="w-5 h-5" />
+                    <span className="text-sm font-semibold tracking-tight">Transmission Logs</span>
+                </button>
             </SheetTrigger>
-            <SheetContent className="w-full sm:max-w-3xl bg-background/80 backdrop-blur-3xl border-l border-white/40 p-0 physics-spring">
-                <div className="h-full flex flex-col pt-16">
-                    {/* Header */}
-                    <div className="px-12 flex items-center justify-between gap-6 mb-12 stagger-children">
-                        <div className="flex items-center gap-5">
-                            <div className="w-16 h-16 rounded-[2rem] bg-secondary flex items-center justify-center shadow-premium border border-white/50">
-                                <Clock className="w-8 h-8 text-secondary-foreground" />
-                            </div>
-                            <div>
-                                <SheetTitle className="text-4xl font-black tracking-tighter">Transmission Archive</SheetTitle>
-                                <SheetDescription className="text-base font-black text-primary/40 uppercase tracking-[0.2em] mt-1">Neural Interaction Sequence</SheetDescription>
-                            </div>
+            <SheetContent 
+                side="right" 
+                className="w-full sm:max-w-xl md:max-w-2xl bg-white/95 backdrop-blur-xl border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
+            >
+                {/* Header */}
+                <div className="shrink-0 px-6 sm:px-10 py-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-6 safe-scroll">
+                    <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-secondary flex items-center justify-center shadow-inner border border-white/50 shrink-0">
+                            <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-secondary-foreground" />
+                        </div>
+                        <div>
+                            <SheetTitle className="text-2xl sm:text-3xl font-black tracking-tighter">Transmission Archive</SheetTitle>
+                            <SheetDescription className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mt-1">Neural Interaction Sequence</SheetDescription>
                         </div>
                     </div>
+                </div>
 
-                    <div className="px-12 space-y-10 flex-1 flex flex-col min-h-0 stagger-children">
-                        {/* Matrix Control Bar */}
-                        <div className="flex gap-4 justify-between items-center surface-panel p-3 rounded-[2rem] border-white/60 shadow-premium grow-0 stagger-1">
-                            <div className="flex items-center gap-3 px-5">
-                                <Zap className="w-4 h-4 text-primary opacity-40" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Log Integrity Active</span>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button onClick={loadHistory} variant="ghost" className="h-12 rounded-[1.25rem] hover:bg-primary/10 text-primary font-black text-xs uppercase tracking-widest px-6 active-compress">
-                                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                                    SYNC
-                                </Button>
-                                <Button
-                                    onClick={handleClear}
-                                    variant="ghost"
-                                    className="h-12 rounded-[1.25rem] hover:bg-destructive/10 text-destructive font-black text-xs uppercase tracking-widest px-6 active-compress"
-                                    disabled={history.length === 0}
-                                >
-                                    <Trash2 className="w-4 h-4 mr-2" />
-                                    PURGE
-                                </Button>
-                            </div>
-                        </div>
+                {/* Control Bar */}
+                <div className="px-6 sm:px-10 py-4 border-b border-border flex items-center justify-between bg-black/5 shrink-0">
+                    <div className="flex items-center gap-2">
+                        <Zap className="w-3.5 h-3.5 text-primary animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">Integrity Active</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button 
+                            onClick={loadHistory} 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 rounded-lg hover:bg-white text-[9px] font-black uppercase tracking-widest px-3"
+                        >
+                            <RefreshCw className={cn("w-3 h-3 mr-2", loading && "animate-spin")} />
+                            Sync
+                        </Button>
+                        <Button 
+                            onClick={handleClear} 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 rounded-lg hover:bg-destructive/5 hover:text-destructive text-[9px] font-black uppercase tracking-widest px-3"
+                            disabled={history.length === 0}
+                        >
+                            <Trash2 className="w-3 h-3 mr-2" />
+                            Purge
+                        </Button>
+                    </div>
+                </div>
 
-                        {/* Sequential Timeline */}
-                        <ScrollArea className="flex-1 -mr-6 pr-6 pb-20 stagger-2">
+                {/* Timeline */}
+                <ScrollArea className="flex-1 px-6 sm:px-10 custom-scrollbar overscroll-contain momentum-scroll min-h-0">
+                    <div className="py-10 pb-20">
+                        <AnimatePresence mode="popLayout">
                             {history.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-40 text-center opacity-10">
-                                    <MessageSquare className="w-24 h-24 mb-8" />
-                                    <p className="text-sm font-black uppercase tracking-[0.5em]">No Log Data</p>
-                                </div>
+                                <motion.div 
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex flex-col items-center justify-center py-20 text-center opacity-20"
+                                >
+                                    <MessageSquare className="w-16 h-16 mb-6" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em]">Vault Matrix Empty</p>
+                                </motion.div>
                             ) : (
-                                <div className="space-y-12 relative before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-px before:bg-foreground/5">
+                                <div className="space-y-10 relative before:absolute before:left-[15px] sm:before:left-[19px] before:top-4 before:bottom-4 before:w-px before:bg-border">
                                     {history.map((msg, idx) => (
-                                        <div key={idx} className="relative pl-16 group/log animate-slide-up" style={{ animationDelay: `${idx * 60}ms` }}>
+                                        <motion.div 
+                                            key={idx}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                            className="relative pl-10 sm:pl-16 group/log"
+                                        >
                                             {/* Node Indicator */}
-                                            <div className={`absolute left-0 top-1 w-10 h-10 rounded-2xl flex items-center justify-center shadow-premium border transition-all z-10 scale-100 group-hover/log:scale-110 physics-spring ${
+                                            <div className={cn(
+                                                "absolute left-0 top-1 w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg border transition-all z-10",
                                                 msg.role === 'user' 
-                                                ? 'bg-secondary border-secondary-foreground/10 text-secondary-foreground underline-offset-4' 
-                                                : 'bg-white border-foreground/5 text-primary shadow-emerald-glow'
-                                            }`}>
-                                                {msg.role === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                                                ? 'bg-secondary border-secondary-foreground/10 text-secondary-foreground' 
+                                                : 'bg-white border-border text-primary'
+                                            )}>
+                                                {msg.role === 'user' ? <User className="w-4 h-4 sm:w-5 sm:h-5" /> : <Bot className="w-4 h-4 sm:w-5 sm:h-5" />}
                                             </div>
 
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-4">
-                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">{msg.role}</span>
-                                                    <div className="h-px flex-1 bg-foreground/5" />
-                                                    <span className="text-[10px] font-black text-muted-foreground/20 italic">
-                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60">{msg.role}</span>
+                                                    <div className="h-px flex-1 bg-border/50" />
+                                                    <span className="text-[8px] font-bold text-muted-foreground/30">
+                                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                     </span>
                                                 </div>
-                                                <div className={`p-8 rounded-[2.5rem] border border-white/60 shadow-premium transition-all physics-spring group-hover/log:bg-white ${
-                                                    msg.role === 'user' ? 'bg-secondary/20' : 'bg-white/40'
-                                                }`}>
-                                                    <p className="text-sm font-medium leading-relaxed text-foreground/80 whitespace-pre-wrap tracking-tight line-clamp-4 group-hover/log:line-clamp-none transition-all">
+                                                <div className={cn(
+                                                    "p-5 sm:p-6 rounded-2xl sm:rounded-3xl border border-border transition-all",
+                                                    msg.role === 'user' ? 'bg-black/5' : 'bg-white shadow-sm'
+                                                )}>
+                                                    <p className="text-xs sm:text-sm font-medium leading-relaxed text-foreground/80 whitespace-pre-wrap tracking-tight break-words">
                                                         {msg.content}
                                                     </p>
-                                                    <div className="mt-6 flex justify-end opacity-20 group-hover/log:opacity-100 transition-opacity">
-                                                        <ArrowRight className="w-4 h-4 text-primary" />
-                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     ))}
                                 </div>
                             )}
-                        </ScrollArea>
+                        </AnimatePresence>
                     </div>
-                </div>
+                </ScrollArea>
             </SheetContent>
         </Sheet>
     );
 }
+

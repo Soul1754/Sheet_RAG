@@ -10,7 +10,10 @@ interface AnalyticsData {
     avg_latency_ms: number;
     status_codes: Record<string, number>;
     endpoints: Record<string, number>;
-    cache_stats: any;
+    cache_stats: {
+        hits: number;
+        misses: number;
+    } | null;
 }
 
 export function AnalyticsDashboard() {
