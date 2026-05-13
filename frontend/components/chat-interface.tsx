@@ -151,7 +151,10 @@ export function ChatInterface() {
         <div className="flex flex-col flex-1 w-full relative min-h-0 bg-background">
             {/* --- CHAT MESSAGES AREA --- */}
             <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 lg:px-8 py-2 sm:py-4">
-                <div className="max-w-4xl mx-auto w-full h-full flex flex-col justify-center">
+                <div className={cn(
+                    "max-w-4xl mx-auto w-full",
+                    messages.length === 0 && "h-full flex flex-col justify-center"
+                )}>
                     {messages.length === 0 ? (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
