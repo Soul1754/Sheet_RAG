@@ -28,6 +28,11 @@ class Settings(BaseSettings):
 
     # Debug flags
     debug_llm_log: bool = True
+
+    # RAG pipeline audit log (query, full chunks, response, scores)
+    rag_pipeline_logging_enabled: bool = True
+    rag_pipeline_log_dir: Optional[str] = None  # default: backend/logs
+    rag_pipeline_log_file: Optional[str] = None  # default: rag_pipeline.log in log dir
     
     class Config:
         env_file = ".env"

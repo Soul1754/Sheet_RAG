@@ -14,6 +14,7 @@ from llama_index.llms.nvidia import NVIDIA
 from llama_index.embeddings.nvidia import NVIDIAEmbedding
 from config import settings
 from cache import cache
+from rag_pipeline_logger import log_standard_rag_query, serialize_llama_response_sources
 
 class RAGEngine:
     def __init__(self):
@@ -107,12 +108,28 @@ class RAGEngine:
     def query(self, query_text: str, top_k: int = 5, use_enhancement: bool = True):
         """Query the index with optional query enhancement"""
         if self.index is None or self.collection.count() == 0:
+            log_standard_rag_query(
+                query_text=query_text,
+                top_k=top_k,
+                use_enhancement=use_enhancement,
+                cache_hit=False,
+                response_text="Index is empty. Please ingest some papers first.",
+                source_nodes_summary=[],
+            )
             return "Index is empty. Please ingest some papers first."
         
         # Check cache first
         cached_result = self.cache.get_query_result(query_text)
         if cached_result:
             print("[OK] Cache hit for query")
+            log_standard_rag_query(
+                query_text=query_text,
+                top_k=top_k,
+                use_enhancement=use_enhancement,
+                cache_hit=True,
+                response_text=str(cached_result),
+                source_nodes_summary=serialize_llama_response_sources(cached_result),
+            )
             return cached_result
         
         # Apply query enhancement if enabled
@@ -178,6 +195,14 @@ class RAGEngine:
             )
             response = query_engine.query(query_text)
         
+        log_standard_rag_query(
+            query_text=query_text,
+            top_k=top_k,
+            use_enhancement=use_enhancement,
+            cache_hit=False,
+            response_text=str(response),
+            source_nodes_summary=serialize_llama_response_sources(response),
+        )
         # Cache the result
         self.cache.set_query_result(query_text, response)
         return response

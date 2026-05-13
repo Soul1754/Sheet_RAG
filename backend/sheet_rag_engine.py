@@ -36,6 +36,7 @@ from cross_validator import (
     ValidatedResult,
     create_scored_chunks_from_nodes
 )
+from rag_pipeline_logger import log_sheet_rag_query
 
 
 class SheetRAGEngine:
@@ -230,17 +231,36 @@ class SheetRAGEngine:
         # Check if any layer has data
         total_chunks = sum(self.collections[layer].count() for layer in self.LAYERS)
         if total_chunks == 0:
-            return {
+            empty = {
                 "response": "The Sheet RAG index is empty. Please ingest some papers first.",
                 "sources": [],
                 "validation": None
             }
+            log_sheet_rag_query(
+                query_text=query_text,
+                top_k=top_k,
+                use_cross_validation=use_cross_validation,
+                cache_hit=False,
+                context_chunks_for_generation=None,
+                validated_results=None,
+                result=empty,
+            )
+            return empty
         
         # Check cache
         cache_key = f"sheet_rag:{query_text}:{top_k}:{use_cross_validation}"
         cached = self.cache.get_query_result(cache_key)
         if cached:
             print("[OK] Cache hit for Sheet RAG query")
+            log_sheet_rag_query(
+                query_text=query_text,
+                top_k=top_k,
+                use_cross_validation=use_cross_validation,
+                cache_hit=True,
+                context_chunks_for_generation=None,
+                validated_results=None,
+                result=cached,
+            )
             return cached
         
         print(f"[SEARCH] Querying all {len(self.LAYERS)} layers...")
@@ -288,6 +308,16 @@ class SheetRAGEngine:
                 layer: len(chunks) for layer, chunks in layer_results.items()
             }
         }
+
+        log_sheet_rag_query(
+            query_text=query_text,
+            top_k=top_k,
+            use_cross_validation=use_cross_validation,
+            cache_hit=False,
+            context_chunks_for_generation=context_chunks,
+            validated_results=validated_results if use_cross_validation else [],
+            result=result,
+        )
         
         # Cache result
         self.cache.set_query_result(cache_key, result)
