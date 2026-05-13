@@ -12,6 +12,8 @@ across abstraction levels, reducing hallucinations.
 """
 
 import os
+import time
+from datetime import datetime
 from typing import List, Dict, Any, Optional
 import chromadb
 from chromadb.config import Settings as ChromaSettings
@@ -323,10 +325,42 @@ Question: {query_text}
 
 Detailed Answer:"""
         
+        debug_llm = settings.debug_llm_log
+        start = time.time()
+        if debug_llm:
+            timestamp = datetime.utcnow().isoformat() + "Z"
+            prompt_preview = prompt[:1200].replace("\n", " ")
+            print(
+                "[LLM][START]"
+                f" ts={timestamp}"
+                f" query_len={len(query_text)}"
+                f" context_chunks={len(context_chunks)}"
+                f" context_len={len(context)}"
+                f" prompt_len={len(prompt)}"
+                f" prompt_preview=\"{prompt_preview}\""
+            )
+
         try:
             response = self.llm.complete(prompt)
+            elapsed = time.time() - start
+            if debug_llm:
+                timestamp = datetime.utcnow().isoformat() + "Z"
+                print(
+                    "[LLM][END]"
+                    f" ts={timestamp}"
+                    f" elapsed_s={elapsed:.2f}"
+                )
             return str(response).strip()
         except Exception as e:
+            elapsed = time.time() - start
+            if debug_llm:
+                timestamp = datetime.utcnow().isoformat() + "Z"
+                print(
+                    "[LLM][ERROR]"
+                    f" ts={timestamp}"
+                    f" elapsed_s={elapsed:.2f}"
+                    f" error=\"{e}\""
+                )
             return f"Error generating response: {str(e)}"
     
     def _format_sources(

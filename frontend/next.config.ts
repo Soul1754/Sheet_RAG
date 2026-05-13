@@ -1,12 +1,18 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "development"
+    ? "http://localhost:8002"
+    : "http://research-assistant-backend:8002");
+
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: "standalone",
   async rewrites() {
     return [
       {
-        source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://research-assistant-backend:8002'}/:path*`,
+        source: "/api/:path*",
+        destination: `${backendUrl}/:path*`,
       },
     ];
   },

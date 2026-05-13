@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     sheet_rag_layers: list = ["sentence", "paragraph", "section", "summary"]
     cross_validation_threshold: float = 0.5
     cross_validation_min_layers: int = 2
+
+    # Debug flags
+    debug_llm_log: bool = True
     
     class Config:
         env_file = ".env"

@@ -102,7 +102,7 @@ export function PapersLibrary() {
                                 <div className="surface-panel p-6 rounded-[2.5rem] border-white group hover:bg-white transition-all physics-spring hover:shadow-premium">
                                     <div className="flex items-center gap-3 mb-2">
                                         <Activity className="w-4 h-4 text-primary opacity-40" />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40">Total Units</span>
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/40">Total Papers</span>
                                     </div>
                                     <div className="text-4xl font-black tracking-tighter text-foreground/80">{stats.total_papers || 0}</div>
                                 </div>
