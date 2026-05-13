@@ -16,9 +16,9 @@ class CacheManager:
                     socket_connect_timeout=2
                 )
                 self.client.ping()
-                print("✓ Redis cache connected")
+                print("[OK] Redis cache connected")
             except Exception as e:
-                print(f"⚠ Redis connection failed: {e}. Caching disabled.")
+                print(f"[WARN] Redis connection failed: {e}. Caching disabled.")
                 self.enabled = False
     
     def _make_key(self, prefix: str, data: str) -> str:
@@ -83,7 +83,7 @@ class CacheManager:
         
         try:
             self.client.flushdb()
-            print("✓ Cache cleared")
+            print("[OK] Cache cleared")
         except Exception as e:
             print(f"Cache clear error: {e}")
     

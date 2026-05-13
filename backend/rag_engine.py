@@ -41,7 +41,7 @@ class RAGEngine:
         
         Settings.llm = self.llm
         Settings.embed_model = self.embed_model
-        print("✓ NVIDIA models initialized")
+        print("[OK] NVIDIA models initialized")
 
     def _setup_vector_store(self):
         """Initialize ChromaDB vector store"""
@@ -59,13 +59,13 @@ class RAGEngine:
         # Get or create collection
         try:
             self.collection = self.chroma_client.get_collection("research_papers")
-            print(f"✓ Loaded existing collection with {self.collection.count()} documents")
+            print(f"[OK] Loaded existing collection with {self.collection.count()} documents")
         except:
             self.collection = self.chroma_client.create_collection(
                 name="research_papers",
                 metadata={"description": "Research papers vector store"}
             )
-            print("✓ Created new collection")
+            print("[OK] Created new collection")
         
         # Create LlamaIndex vector store wrapper
         self.vector_store = ChromaVectorStore(chroma_collection=self.collection)
@@ -75,13 +75,13 @@ class RAGEngine:
         storage_context = StorageContext.from_defaults(vector_store=self.vector_store)
         
         if self.collection.count() > 0:
-            print("✓ Loading index from ChromaDB...")
+            print("[OK] Loading index from ChromaDB...")
             return VectorStoreIndex.from_vector_store(
                 self.vector_store,
                 storage_context=storage_context
             )
         else:
-            print("✓ Creating new empty index")
+            print("[OK] Creating new empty index")
             return VectorStoreIndex.from_documents(
                 [],
                 storage_context=storage_context
@@ -102,7 +102,7 @@ class RAGEngine:
             for doc in documents:
                 self.index.insert(doc)
         
-        print(f"✓ Index now contains {self.collection.count()} document chunks")
+        print(f"[OK] Index now contains {self.collection.count()} document chunks")
 
     def query(self, query_text: str, top_k: int = 5, use_enhancement: bool = True):
         """Query the index with optional query enhancement"""
@@ -112,7 +112,7 @@ class RAGEngine:
         # Check cache first
         cached_result = self.cache.get_query_result(query_text)
         if cached_result:
-            print("✓ Cache hit for query")
+            print("[OK] Cache hit for query")
             return cached_result
         
         # Apply query enhancement if enabled
@@ -122,11 +122,11 @@ class RAGEngine:
                 
                 # Rewrite query for better retrieval
                 enhanced_query = query_enhancer.rewrite_query(query_text)
-                print(f"✓ Enhanced query: {enhanced_query}")
+                print(f"[OK] Enhanced query: {enhanced_query}")
                 
                 # Generate multiple query variations
                 query_variations = query_enhancer.generate_multi_queries(enhanced_query, num_queries=2)
-                print(f"✓ Generated {len(query_variations)} query variations")
+                print(f"[OK] Generated {len(query_variations)} query variations")
                 
                 # Query with all variations and combine results
                 all_nodes = []
@@ -194,7 +194,7 @@ class RAGEngine:
         """Clear all data from the index"""
         if self.collection:
             self.chroma_client.delete_collection("research_papers")
-            print("✓ Collection deleted")
+            print("[OK] Collection deleted")
             self._setup_vector_store()
             self.index = self._load_or_create_index()
-            print("✓ Index cleared and recreated")
+            print("[OK] Index cleared and recreated")

@@ -119,13 +119,6 @@ export const api = {
     searchLibrary: async (query: string) => {
         return axios.get<{ papers: IngestedPaper[] }>(`${API_URL}/papers/search/${query}`);
     },
-    // Chat History
-    getChatHistory: async (conversationId: string = 'default') => {
-        return axios.get(`${API_URL}/chat-history/${conversationId}`);
-    },
-    clearChatHistory: async (conversationId: string = 'default') => {
-        return axios.delete(`${API_URL}/chat-history/${conversationId}`);
-    },
     submitFeedback: async (messageId: string, feedback: 'up' | 'down', conversationId: string = 'default') => {
         return axios.post(`${API_URL}/feedback`, {
             message_id: messageId,
@@ -137,18 +130,6 @@ export const api = {
         return axios.get(`${API_URL}/analytics`);
     },
     // Export functions
-    exportChatMarkdown: async (conversationId: string = 'default') => {
-        const response = await axios.get(`${API_URL}/export/chat/${conversationId}/markdown`, {
-            responseType: 'blob'
-        });
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `chat_${conversationId}.md`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-    },
     getBibtex: async (arxivId: string) => {
         return axios.get<{ arxiv_id: string, bibtex: string }>(`${API_URL}/export/bibtex/${arxivId}`);
     },

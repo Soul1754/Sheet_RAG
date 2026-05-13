@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException, Request, File, UploadFile
+from fastapi.responses import JSONResponse
 from typing import List
 from datetime import datetime
 import shutil, uuid
+import traceback
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -9,7 +11,13 @@ from ingestion import download_paper, load_documents, search_papers
 from rag_engine import RAGEngine
 from cache import cache
 from celery.result import AsyncResult
-from celery_tasks import ingest_paper_task, ingest_batch_task
+try:
+    from celery_tasks import ingest_paper_task, ingest_batch_task
+except ImportError:
+    print("⚠ Celery tasks not found. Async ingestion disabled.")
+    ingest_paper_task = None
+    ingest_batch_task = None
+
 from chat_history import chat_history
 from papers_library import papers_library
 import os
@@ -18,6 +26,21 @@ import asyncio
 import time
 
 app = FastAPI(title="Graph RAG Agent")
+
+# Global exception handler for better debugging
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"!!! GLOBAL ERROR: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": str(exc),
+            "type": type(exc).__name__,
+            "path": request.url.path
+        }
+    )
 
 # Middleware for analytics
 @app.middleware("http")
@@ -103,7 +126,17 @@ class ChatV2Request(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "engines": {
+            "standard_rag": "ready" if rag and rag.index else "not_ready",
+            "sheet_rag": "ready" if sheet_rag and sheet_rag.indexes else "not_ready"
+        },
+        "cache": {
+            "enabled": cache.enabled,
+            "connected": cache.client.ping() if cache.enabled and cache.client else False
+        }
+    }
 
 @app.get("/analytics")
 def get_analytics():
@@ -225,7 +258,7 @@ def ingest_batch(request: BatchIngestRequest):
 @app.post("/upload-paper")
 async def upload_paper(files: List[UploadFile] = File(...)):
     """Upload and ingest local PDF papers"""
-    print(f"📡 [RECEIVE] Start processing {len(files)} uploaded files.")
+    print(f"[RECEIVE] Start processing {len(files)} uploaded files.")
     try:
         upload_dir = "data/uploads"
         os.makedirs(upload_dir, exist_ok=True)
@@ -235,9 +268,9 @@ async def upload_paper(files: List[UploadFile] = File(...)):
         
         for file in files:
             # 1. Validation
-            print(f"🏗️ [VALIDATE] Inspecting unit: {file.filename}")
+            print(f"[VALIDATE] Inspecting unit: {file.filename}")
             if not file.filename.lower().endswith('.pdf'):
-                print(f"❌ [VALIDATE] Rejected: {file.filename} is not a PDF.")
+                print(f"[ERROR] Rejected: {file.filename} is not a PDF.")
                 continue
             
             # Check for empty file
@@ -247,7 +280,7 @@ async def upload_paper(files: List[UploadFile] = File(...)):
             file.file.seek(0) # Reset
             
             if file_size == 0:
-                print(f"❌ [VALIDATE] Rejected: {file.filename} is empty.")
+                print(f"[ERROR] Rejected: {file.filename} is empty.")
                 continue
                 
             # 2. Storage
@@ -257,22 +290,22 @@ async def upload_paper(files: List[UploadFile] = File(...)):
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             
-            print(f"💾 [STORE] Binary committed to vault: {file_path}")
+            print(f"[STORE] Binary committed to vault: {file_path}")
             
             # 3. Extraction & RAG Ingestion
-            print(f"🧠 [INGEST] Initiating neural synthesis for: {local_id}")
+            print(f"[INGEST] Initiating neural synthesis for: {local_id}")
             documents = load_documents(file_path)
             
-            print(f"⚡ [RAG] Syncing to Standard Vector Matrix...")
+            print(f"[SYNC] Syncing to Standard Vector Matrix...")
             rag.add_documents(documents)
             
-            print(f"⚡ [RAG] Syncing to Hierarchical Graph (Sheet) Matrix...")
+            print(f"[SYNC] Syncing to Hierarchical Graph (Sheet) Matrix...")
             sheet_rag.add_documents(documents)
             
             total_pages += len(documents)
             
             # 4. Database Persistence
-            print(f"📔 [DATABASE] Committing metadata to Knowledge Vault...")
+            print(f"[DATABASE] Committing metadata to Knowledge Vault...")
             papers_library.add_paper(
                 arxiv_id=local_id,
                 title=file.filename.replace('.pdf', ''),
@@ -282,7 +315,7 @@ async def upload_paper(files: List[UploadFile] = File(...)):
             )
             
             results.append({"id": local_id, "filename": file.filename})
-            print(f"✅ [SUCCESS] Unit synthesized: {local_id}")
+            print(f"[SUCCESS] Unit synthesized: {local_id}")
             
         return {
             "success": True, 
@@ -290,12 +323,14 @@ async def upload_paper(files: List[UploadFile] = File(...)):
             "results": results
         }
     except Exception as e:
-        print(f"🚨 [FAILURE] Neural collapse during upload: {str(e)}")
+        print(f"[FAILURE] Neural collapse during upload: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/ingest-async")
 def ingest_async(request: IngestRequest):
     """Start async ingestion task"""
+    if not ingest_paper_task:
+        raise HTTPException(status_code=503, detail="Celery tasks not available")
     try:
         task = ingest_paper_task.delay(request.arxiv_id)
         return {
@@ -310,6 +345,8 @@ def ingest_async(request: IngestRequest):
 @app.post("/ingest-batch-async")
 def ingest_batch_async(request: BatchIngestRequest):
     """Start async batch ingestion task"""
+    if not ingest_batch_task:
+        raise HTTPException(status_code=503, detail="Celery tasks not available")
     try:
         task = ingest_batch_task.delay(request.arxiv_ids)
         return {
@@ -504,24 +541,6 @@ def submit_feedback(request: FeedbackRequest):
         print(f"Error submitting feedback: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/chat-history/{conversation_id}")
-def get_chat_history(conversation_id: str):
-    """Get conversation history"""
-    try:
-        history = chat_history.get_history(conversation_id)
-        return {"conversation_id": conversation_id, "history": history}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.delete("/chat-history/{conversation_id}")
-def clear_chat_history(conversation_id: str):
-    """Clear conversation history"""
-    try:
-        chat_history.clear_history(conversation_id)
-        return {"status": "success", "message": f"Cleared history for {conversation_id}"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @app.get("/papers")
 def get_papers():
     """Get all ingested papers"""
@@ -564,27 +583,6 @@ def search_library(query: str):
     try:
         results = papers_library.search_papers(query)
         return {"query": query, "results": results, "count": len(results)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Export endpoints
-@app.get("/export/chat/{conversation_id}/markdown")
-def export_chat_markdown(conversation_id: str):
-    """Export chat conversation as Markdown"""
-    try:
-        from export_utils import generate_markdown
-        from fastapi.responses import Response
-        
-        markdown_content = generate_markdown(conversation_id)
-        
-        # Return as downloadable file
-        return Response(
-            content=markdown_content,
-            media_type="text/markdown",
-            headers={
-                "Content-Disposition": f"attachment; filename=chat_{conversation_id}.md"
-            }
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -748,7 +746,7 @@ def ingest_paper_sheet_rag(request: IngestRequest):
     - Summary level (document-level overview)
     """
     try:
-        print(f"📊 Ingesting {request.arxiv_id} into Sheet RAG...")
+        print(f"[STATS] Ingesting {request.arxiv_id} into Sheet RAG...")
         
         # Search for paper metadata
         search_results = search_papers(request.arxiv_id, max_results=1)
@@ -793,7 +791,7 @@ def ingest_batch_sheet_rag(request: BatchIngestRequest):
         total_pages = 0
         
         for arxiv_id in request.arxiv_ids:
-            print(f"📊 Ingesting {arxiv_id} into Sheet RAG...")
+            print(f"[STATS] Ingesting {arxiv_id} into Sheet RAG...")
             
             search_results = search_papers(arxiv_id, max_results=1)
             paper_metadata = search_results[0] if search_results else None

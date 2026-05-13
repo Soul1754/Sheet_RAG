@@ -49,39 +49,39 @@ export function AnalyticsDashboard() {
     return (
         <div className="p-6 space-y-6 max-w-6xl mx-auto">
             <h2 className="text-2xl font-bold flex items-center gap-2">
-                <BarChart3 className="w-6 h-6" /> System Analytics
+                <BarChart3 className="w-6 h-6" /> App Performance
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+                        <CardTitle className="text-sm font-medium">Questions Asked</CardTitle>
                         <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.total_requests}</div>
-                        <p className="text-xs text-muted-foreground">Lifetime API calls</p>
+                        <p className="text-xs text-muted-foreground">Total questions since start</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Avg Latency</CardTitle>
+                        <CardTitle className="text-sm font-medium">Response Speed</CardTitle>
                         <Clock className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.avg_latency_ms}ms</div>
-                        <p className="text-xs text-muted-foreground">Per request average</p>
+                        <p className="text-xs text-muted-foreground">Average time per answer</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Cache Hits</CardTitle>
+                        <CardTitle className="text-sm font-medium">Saved Answers</CardTitle>
                         <Server className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.cache_stats?.hits || 0}</div>
                         <p className="text-xs text-muted-foreground">
-                            Misses: {data.cache_stats?.misses || 0}
+                            New Answers: {data.cache_stats?.misses || 0}
                         </p>
                     </CardContent>
                 </Card>
@@ -109,7 +109,7 @@ export function AnalyticsDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Top Endpoints</CardTitle>
+                        <CardTitle>Most Used Features</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
@@ -128,7 +128,7 @@ export function AnalyticsDashboard() {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Response Codes</CardTitle>
+                        <CardTitle>System Status</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">

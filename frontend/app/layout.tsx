@@ -23,10 +23,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-primary/20`}>
         {/* Layer 1: Global Background Intelligence */}
-        <div className="fixed inset-0 bg-noise z-[9999] opacity-[0.03]" />
+        <div className="fixed inset-0 bg-noise z-[9999] opacity-[0.03] pointer-events-none" />
         <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/10 pointer-events-none" />
         
         {/* Ambient Breathing Light */}

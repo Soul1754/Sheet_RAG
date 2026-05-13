@@ -39,15 +39,15 @@ export function AdminPanel() {
             if (res.data.success) {
                 setStatus({
                     type: 'success',
-                    message: res.data.message || `Successfully synthesized ${selectedFiles.length} units.`
+                    message: res.data.message || `Successfully uploaded ${selectedFiles.length} documents.`
                 });
                 setSelectedFiles([]);
                 window.dispatchEvent(new Event('paper-ingested'));
             } else {
-                throw new Error(res.data.message || 'Matrix synthesis failed');
+                throw new Error(res.data.message || 'Upload failed');
             }
         } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : 'File synthesis failed.';
+            const errorMessage = error instanceof Error ? error.message : 'Upload failed.';
             setStatus({
                 type: 'error',
                 message: errorMessage
@@ -59,37 +59,37 @@ export function AdminPanel() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left">
-                    <Plus className="w-5 h-5" />
-                    <span className="text-sm font-semibold tracking-tight">Intelligence Ingest</span>
+                <button className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left premium-button group">
+                    <Plus className="w-5 h-5 group-hover:text-primary transition-colors" />
+                    <span className="text-sm font-semibold tracking-tight">Add Files</span>
                 </button>
             </SheetTrigger>
             <SheetContent 
                 side="right" 
-                className="w-full sm:max-w-xl md:max-w-2xl bg-white/95 backdrop-blur-xl border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
+                className="w-full sm:max-w-xl md:max-w-2xl bg-white border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
             >
-                <div className="shrink-0 px-6 sm:px-10 py-8 border-b border-border flex items-center gap-5 safe-scroll">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg border border-primary/20 shrink-0">
-                        <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                <div className="shrink-0 px-5 sm:px-8 py-5 sm:py-6 border-b border-border flex items-center gap-4">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+                        <Plus className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                     </div>
                     <div>
-                        <SheetTitle className="text-2xl sm:text-3xl font-black tracking-tighter">Intelligence Ingest</SheetTitle>
-                        <SheetDescription className="text-[10px] font-black text-primary/60 uppercase tracking-[0.2em] mt-1">Local Library Synthesis</SheetDescription>
+                        <SheetTitle className="text-xl sm:text-2xl font-bold tracking-tight">Add Files</SheetTitle>
+                        <SheetDescription className="text-[9px] font-bold text-primary/60 uppercase tracking-[0.2em] mt-1">Upload PDF</SheetDescription>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar overscroll-contain p-6 sm:p-10 space-y-8 momentum-scroll min-h-0">
-                    <div className="space-y-4">
-                        <p className="text-sm sm:text-base font-medium text-muted-foreground/60 leading-relaxed">
-                            Ingest your private research collection directly into the neural matrix for cross-document synthesis.
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-8 space-y-6 min-h-0">
+                    <div className="space-y-3">
+                        <p className="text-sm font-medium text-muted-foreground/60 leading-relaxed">
+                            Add your PDFs here so the AI can read them.
                         </p>
 
-                        <div className="p-4 sm:p-5 bg-black/5 rounded-2xl border border-border flex items-center justify-between">
+                        <div className="p-4 sm:p-5 bg-black/5 rounded-2xl border border-transparent hover:bg-white hover:border-border hover:shadow-premium transition-all flex items-center justify-between group">
                             <div className="flex items-center gap-3">
-                                <Layers className="w-4 h-4 text-primary opacity-40" />
+                                <Layers className="w-4.5 h-4.5 text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 leading-none mb-1">Architecture</span>
-                                    <span className="text-xs font-bold text-foreground">{useSheetRAG ? 'Hierarchical Graph' : 'Standard Vector'}</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40 leading-none mb-1">Quality</span>
+                                    <span className="text-xs font-bold text-foreground">{useSheetRAG ? 'Highest' : 'Normal'}</span>
                                 </div>
                             </div>
                             <Switch
@@ -102,7 +102,7 @@ export function AdminPanel() {
 
                     <div 
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex flex-col items-center justify-center p-8 sm:p-12 rounded-3xl border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all cursor-pointer group"
+                        className="flex flex-col items-center justify-center p-8 sm:p-10 rounded-3xl border-2 border-dashed border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all cursor-pointer group premium-button"
                     >
                         <input 
                             type="file" 
@@ -112,11 +112,11 @@ export function AdminPanel() {
                             ref={fileInputRef}
                             onChange={handleFileSelect}
                         />
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-all mb-6">
-                            <Upload className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white flex items-center justify-center shadow-premium group-hover:scale-110 transition-all mb-4">
+                            <Upload className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
                         </div>
-                        <h4 className="text-lg sm:text-xl font-black tracking-tight mb-1">Neural Binary Upload</h4>
-                        <p className="text-xs font-medium text-muted-foreground/50">Drop PDFs or click to explore</p>
+                        <h4 className="text-base sm:text-lg font-bold tracking-tight mb-1">Upload PDF</h4>
+                        <p className="text-xs font-medium text-muted-foreground/50">Drop PDFs here or click to choose</p>
                     </div>
 
                     <AnimatePresence>
@@ -127,19 +127,25 @@ export function AdminPanel() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="space-y-4 overflow-hidden"
                             >
-                                <div className="flex items-center justify-between px-2">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">{selectedFiles.length} Units Staged</span>
-                                    <button className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 hover:text-destructive transition-colors" onClick={() => setSelectedFiles([])}>Discard All</button>
+                                <div className="flex items-center justify-between px-1">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary/60">{selectedFiles.length} Files Selected</span>
+                                    <button className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/40 hover:text-destructive transition-colors premium-button" onClick={() => setSelectedFiles([])}>Discard All</button>
                                 </div>
                                 
-                                <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar overscroll-contain momentum-scroll">
+                                <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                                     {selectedFiles.map((file, i) => (
-                                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-black/5 border border-transparent hover:border-border hover:bg-white transition-all">
+                                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-black/5 border border-transparent hover:border-border hover:bg-white transition-all group">
                                             <div className="flex items-center gap-3 min-w-0">
-                                                <FileText className="w-4 h-4 text-primary shrink-0 opacity-40" />
+                                                <div className="w-7 h-7 rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
+                                                    <FileText className="w-3.5 h-3.5" />
+                                                </div>
                                                 <span className="text-xs font-bold truncate text-foreground/70">{file.name}</span>
                                             </div>
-                                            <button onClick={(e) => { e.stopPropagation(); removeFile(i); }} className="text-muted-foreground/30 hover:text-destructive transition-colors">
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); removeFile(i); }} 
+                                                className="p-1 text-muted-foreground/30 hover:text-destructive transition-colors premium-button"
+                                                aria-label="Remove file"
+                                            >
                                                 <X className="w-4 h-4" />
                                             </button>
                                         </div>
@@ -149,10 +155,10 @@ export function AdminPanel() {
                                 <Button 
                                     onClick={handleUpload}
                                     disabled={loading}
-                                    className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white text-base font-black tracking-tight shadow-xl active-compress"
+                                    className="w-full h-14 rounded-2xl bg-primary hover:shadow-lg shadow-primary/20 text-white text-sm font-bold tracking-tight premium-button"
                                 >
-                                    {loading ? <RefreshCw className="w-5 h-5 animate-spin mr-3" /> : <Sparkles className="w-5 h-5 mr-3" />}
-                                    {loading ? 'SYNTHESIZING...' : 'START LOCAL INGEST'}
+                                    {loading ? <RefreshCw className="w-4 h-4 animate-spin mr-2.5" /> : <Sparkles className="w-4 h-4 mr-2.5" />}
+                                    {loading ? 'ADDING...' : 'ADD FILES'}
                                 </Button>
                             </motion.div>
                         )}
@@ -164,14 +170,19 @@ export function AdminPanel() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className={cn(
-                                    "p-5 rounded-2xl border flex items-center gap-4 shadow-lg pb-10",
+                                    "p-5 rounded-2xl border flex items-center gap-4 shadow-premium mb-8",
                                     status.type === 'success' ? 'bg-primary/5 border-primary/20 text-primary' : 'bg-destructive/5 border-destructive/20 text-destructive'
                                 )}
                             >
-                                {status.type === 'success' ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <Terminal className="w-5 h-5 shrink-0" />}
+                                <div className={cn(
+                                    "w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm",
+                                    status.type === 'success' ? 'bg-primary/10' : 'bg-destructive/10'
+                                )}>
+                                    {status.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : <Terminal className="w-5 h-5" />}
+                                </div>
                                 <div className="flex flex-col">
-                                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60">Matrix System Log</span>
-                                    <p className="text-xs font-black tracking-tight leading-tight break-words">{status.message}</p>
+                                    <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">Status</span>
+                                    <p className="text-xs font-bold tracking-tight leading-snug break-words">{status.message}</p>
                                 </div>
                             </motion.div>
                         )}

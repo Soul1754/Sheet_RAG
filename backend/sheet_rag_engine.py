@@ -75,7 +75,7 @@ class SheetRAGEngine:
             min_layers=2
         )
         
-        print("✓ Sheet RAG Engine initialized with 4 layers")
+        print("[OK] Sheet RAG Engine initialized with 4 layers")
     
     def _setup_models(self):
         """Initialize NVIDIA LLM and embedding models"""
@@ -93,7 +93,7 @@ class SheetRAGEngine:
         
         Settings.llm = self.llm
         Settings.embed_model = self.embed_model
-        print("✓ NVIDIA models initialized for Sheet RAG")
+        print("[OK] NVIDIA models initialized for Sheet RAG")
     
     def _setup_vector_stores(self):
         """Initialize ChromaDB with separate collection for each layer"""
@@ -114,13 +114,13 @@ class SheetRAGEngine:
             collection_name = f"{self.COLLECTION_PREFIX}_{layer}"
             try:
                 self.collections[layer] = self.chroma_client.get_collection(collection_name)
-                print(f"✓ Loaded {layer} collection with {self.collections[layer].count()} chunks")
+                print(f"[OK] Loaded {layer} collection with {self.collections[layer].count()} chunks")
             except:
                 self.collections[layer] = self.chroma_client.create_collection(
                     name=collection_name,
                     metadata={"description": f"Sheet RAG {layer} layer"}
                 )
-                print(f"✓ Created new {layer} collection")
+                print(f"[OK] Created new {layer} collection")
             
             # Create LlamaIndex vector store wrapper
             self.vector_stores[layer] = ChromaVectorStore(
@@ -193,7 +193,7 @@ class SheetRAGEngine:
                     self.indexes[layer].insert(doc)
         
         stats = self.get_stats()
-        print(f"✓ Sheet RAG ingestion complete. Total chunks: {stats['total_chunks']}")
+        print(f"[OK] Sheet RAG ingestion complete. Total chunks: {stats['total_chunks']}")
     
     def _search_layer(
         self,
@@ -240,23 +240,23 @@ class SheetRAGEngine:
         cache_key = f"sheet_rag:{query_text}:{top_k}:{use_cross_validation}"
         cached = self.cache.get_query_result(cache_key)
         if cached:
-            print("✓ Cache hit for Sheet RAG query")
+            print("[OK] Cache hit for Sheet RAG query")
             return cached
         
-        print(f"🔍 Querying all {len(self.LAYERS)} layers...")
+        print(f"[SEARCH] Querying all {len(self.LAYERS)} layers...")
         
         # Search all layers
         layer_results: Dict[str, List[ScoredChunk]] = {}
         for layer in self.LAYERS:
             layer_results[layer] = self._search_layer(layer, query_text, top_k)
-            print(f"  📊 {layer}: {len(layer_results[layer])} results")
+            print(f"  [STATS] {layer}: {len(layer_results[layer])} results")
         
         # Cross-validate if enabled
         if use_cross_validation:
             validated_results = self.validator.validate_bidirectional(layer_results)
             validation_summary = self.validator.get_validation_summary(validated_results)
             
-            print(f"✓ Cross-validation: {len(validated_results)} validated results")
+            print(f"[OK] Cross-validation: {len(validated_results)} validated results")
             
             # Use validated results for response generation
             if validated_results:
@@ -452,14 +452,14 @@ Detailed Answer:"""
             collection_name = f"{self.COLLECTION_PREFIX}_{layer}"
             try:
                 self.chroma_client.delete_collection(collection_name)
-                print(f"✓ Deleted {layer} collection")
+                print(f"[OK] Deleted {layer} collection")
             except:
                 pass
         
         # Reinitialize
         self._setup_vector_stores()
         self._load_or_create_indexes()
-        print("✓ Sheet RAG cleared and reinitialized")
+        print("[OK] Sheet RAG cleared and reinitialized")
     
     def clear_layer(self, layer: str):
         """Clear a specific layer"""
@@ -469,7 +469,7 @@ Detailed Answer:"""
         collection_name = f"{self.COLLECTION_PREFIX}_{layer}"
         try:
             self.chroma_client.delete_collection(collection_name)
-            print(f"✓ Deleted {layer} collection")
+            print(f"[OK] Deleted {layer} collection")
             
             # Recreate empty collection
             self.collections[layer] = self.chroma_client.create_collection(
