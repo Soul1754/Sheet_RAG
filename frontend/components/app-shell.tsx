@@ -133,7 +133,7 @@ export function AppShell({ children, sidebar, rightDrawer }: AppShellProps) {
               >
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:bg-primary/30 transition-all duration-500" />
                 <div className="relative w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                  <Sparkles className="w-4.5 h-4.5 text-white" />
+                  <Sparkles className="w-5 h-5 text-white" />
                 </div>
               </motion.div>
             )}
@@ -156,7 +156,7 @@ export function AppShell({ children, sidebar, rightDrawer }: AppShellProps) {
       </motion.aside>
 
       {/* --- MAIN CONTENT AREA --- */}
-      <div className="flex-1 flex flex-col relative min-w-0 bg-background overflow-y-auto">
+      <div className="flex-1 flex flex-col relative min-w-0 h-screen h-[100dvh] bg-background overflow-hidden">
         {/* --- HEADER --- */}
         <header 
           className={cn(

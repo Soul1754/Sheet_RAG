@@ -150,23 +150,23 @@ export function ChatInterface() {
     return (
         <div className="flex flex-col flex-1 w-full relative min-h-0 bg-background">
             {/* --- CHAT MESSAGES AREA --- */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-                <div className="max-w-4xl mx-auto w-full space-y-6 pb-12">
-                    {messages.length === 0 && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar px-4 sm:px-6 lg:px-8 py-2 sm:py-4">
+                <div className="max-w-4xl mx-auto w-full h-full flex flex-col justify-center">
+                    {messages.length === 0 ? (
                         <motion.div
-                            initial={{ opacity: 0, y: 15 }}
+                            initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex flex-col items-center justify-center py-8 sm:py-12 text-center"
+                            className="flex flex-col items-center justify-center py-4 sm:py-6 text-center"
                         >
-                            <div className="relative mb-8 group">
-                                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full group-hover:bg-primary/30 transition-all duration-700" />
-                                <div className="relative w-16 h-16 rounded-[2rem] bg-white flex items-center justify-center shadow-premium border border-white transition-transform duration-500 group-hover:scale-110">
-                                    <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                            <div className="relative mb-6 group">
+                                <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full group-hover:bg-primary/30 transition-all duration-700" />
+                                <div className="relative w-14 h-14 rounded-[1.5rem] bg-white flex items-center justify-center shadow-premium border border-white transition-transform duration-500 group-hover:scale-110">
+                                    <Sparkles className="w-7 h-7 text-primary animate-pulse" />
                                 </div>
                             </div>
                             
-                            <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3 text-foreground/90">AI Research Assistant</h3>
-                            <p className="text-muted-foreground/50 max-w-md text-sm sm:text-base leading-relaxed font-medium mb-10 px-6">
+                            <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-2 text-foreground/90">AI Research Assistant</h3>
+                            <p className="text-muted-foreground/50 max-w-md text-xs sm:text-sm leading-relaxed font-medium mb-8 px-6">
                                 Ask questions about your uploaded files and get simple answers.
                             </p>
 
@@ -175,134 +175,134 @@ export function ChatInterface() {
                                     <button
                                         key={si}
                                         onClick={() => handleSend(s)}
-                                        className="p-4 rounded-xl bg-white border border-border/60 hover:border-primary/30 hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 text-sm font-semibold text-foreground/70 text-left flex items-center gap-4 group premium-button"
+                                        className="p-3.5 rounded-xl bg-white border border-border/60 hover:border-primary/30 hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 text-[13px] font-semibold text-foreground/70 text-left flex items-center gap-3 group premium-button"
                                     >
-                                        <div className="w-9 h-9 rounded-xl bg-primary/5 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                                            <Zap className="w-3.5 h-3.5" />
+                                        <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                                            <Zap className="w-3 h-3" />
                                         </div>
-                                        <span className="line-clamp-2 leading-snug">{s}</span>
+                                        <span className="line-clamp-1 leading-snug">{s}</span>
                                     </button>
                                 ))}
                             </div>
                         </motion.div>
-                    )}
-
-                    <div className="space-y-8">
-                        {messages.map((msg, idx) => (
-                            <motion.div
-                                key={idx}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className={cn(
-                                    "flex flex-col gap-3 group/msg",
-                                    msg.role === 'user' ? 'items-end' : 'items-start'
-                                )}
-                            >
-                                <div className={cn(
-                                    "flex gap-3 max-w-[95%] sm:max-w-[85%]",
-                                    msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                                )}>
-                                    <div className={cn(
-                                        "w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm border transition-all",
-                                        msg.role === 'user'
-                                            ? 'bg-secondary border-secondary-foreground/10 text-secondary-foreground'
-                                            : 'bg-white border-border text-primary'
-                                    )}>
-                                        {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                                    </div>
-
-                                    <div className={cn(
-                                        "flex flex-col gap-1.5 min-w-0",
+                    ) : (
+                        <div className="space-y-6 pb-20">
+                            {messages.map((msg, idx) => (
+                                <motion.div
+                                    key={idx}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className={cn(
+                                        "flex flex-col gap-3 group/msg",
                                         msg.role === 'user' ? 'items-end' : 'items-start'
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "flex gap-3 max-w-[95%] sm:max-w-[85%]",
+                                        msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
                                     )}>
                                         <div className={cn(
-                                            "px-4 sm:px-6 py-3.5 sm:py-4.5 rounded-2xl sm:rounded-[2rem] shadow-sm overflow-hidden break-words transition-all duration-300",
+                                            "w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm border transition-all",
                                             msg.role === 'user'
-                                                ? 'bg-primary text-white shadow-lg shadow-primary/10'
-                                                : 'bg-white border border-border/60 text-foreground hover:border-primary/20'
+                                                ? 'bg-secondary border-secondary-foreground/10 text-secondary-foreground'
+                                                : 'bg-white border-border text-primary'
+                                        )}>
+                                            {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                                        </div>
+
+                                        <div className={cn(
+                                            "flex flex-col gap-1.5 min-w-0",
+                                            msg.role === 'user' ? 'items-end' : 'items-start'
                                         )}>
                                             <div className={cn(
-                                                "prose prose-sm sm:prose-base max-w-none leading-relaxed prose-pre:bg-black/5 prose-pre:p-3 prose-pre:rounded-lg prose-pre:overflow-x-auto custom-scrollbar",
-                                                msg.role === 'user' ? "prose-p:text-white prose-headings:text-white prose-strong:text-white prose-code:text-white" : "prose-p:text-foreground/80 prose-headings:text-foreground"
+                                                "px-4 sm:px-6 py-3.5 sm:py-4.5 rounded-2xl sm:rounded-[2rem] shadow-sm overflow-hidden break-words transition-all duration-300",
+                                                msg.role === 'user'
+                                                    ? 'bg-primary text-white shadow-lg shadow-primary/10'
+                                                    : 'bg-white border border-border/60 text-foreground hover:border-primary/20'
                                             )}>
-                                                <ReactMarkdown>{msg.content}</ReactMarkdown>
-                                            </div>
-                                        </div>
-
-                                        {msg.role === 'assistant' && msg.content && (
-                                            <div className="flex gap-1 opacity-0 group-hover/msg:opacity-100 transition-all ml-1">
-                                                <button className="p-1.5 hover:bg-black/5 rounded-lg text-muted-foreground transition-all premium-button" aria-label="Helpful"><ThumbsUp className="w-3.5 h-3.5" /></button>
-                                                <button className="p-1.5 hover:bg-black/5 rounded-lg text-muted-foreground transition-all premium-button" aria-label="Not helpful"><ThumbsDown className="w-3.5 h-3.5" /></button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
-                                    <div className="ml-11 sm:ml-12 w-full max-w-[92%] sm:max-w-[85%] space-y-3">
-                                        {msg.engine === 'sheet_rag' && msg.validation && (
-                                            <div className="flex flex-wrap items-center gap-4 bg-primary/5 border border-primary/10 rounded-xl px-4 py-2.5">
-                                                <Layers className="w-4 h-4 text-primary shrink-0" />
-                                                <div className="flex gap-6">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider text-primary/60">Confidence</span>
-                                                        <span className="text-xs font-bold text-primary">{((msg.validation.avg_confidence || 0) * 100).toFixed(0)}% Sure</span>
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider text-primary/60">Sources</span>
-                                                        <span className="text-xs font-bold text-primary">{msg.validation.count || 0} Files</span>
-                                                    </div>
+                                                <div className={cn(
+                                                    "prose prose-sm sm:prose-base max-w-none leading-relaxed prose-pre:bg-black/5 prose-pre:p-3 prose-pre:rounded-lg prose-pre:overflow-x-auto custom-scrollbar",
+                                                    msg.role === 'user' ? "prose-p:text-white prose-headings:text-white prose-strong:text-white prose-code:text-white" : "prose-p:text-foreground/80 prose-headings:text-foreground"
+                                                )}>
+                                                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                                                 </div>
                                             </div>
-                                        )}
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                                            {msg.citations.map((cite, ci) => {
-                                                const meta = cite.metadata as any;
-                                                const arxivId = meta?.arxiv_id;
-                                                const title = meta?.title || cite.text.slice(0, 60);
-                                                
-                                                return (
-                                                    <div key={ci} className="p-3.5 rounded-xl bg-white border border-border hover:shadow-md transition-all group/cite">
-                                                        <div className="flex items-start justify-between gap-3 mb-1.5">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-5 h-5 rounded-lg bg-secondary/50 flex items-center justify-center text-secondary-foreground shrink-0">
-                                                                    <BookOpen className="w-3 h-3" />
-                                                                </div>
-                                                                <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Source {ci + 1}</span>
-                                                            </div>
-                                                            {arxivId && (
-                                                                <a 
-                                                                    href={`https://arxiv.org/abs/${arxivId}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="p-1 hover:bg-primary/5 rounded-lg text-primary opacity-0 group-hover/cite:opacity-100 transition-all premium-button"
-                                                                    aria-label="View on ArXiv"
-                                                                >
-                                                                    <ExternalLink className="w-3 h-3" />
-                                                                </a>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-xs font-bold text-foreground leading-snug line-clamp-2 mb-1.5">{title}</p>
-                                                        <p className="text-[10px] text-muted-foreground/70 leading-relaxed line-clamp-2 italic">
-                                                            &ldquo;{cite.text}&rdquo;
-                                                        </p>
-                                                    </div>
-                                                );
-                                            })}
+
+                                            {msg.role === 'assistant' && msg.content && (
+                                                <div className="flex gap-1 opacity-0 group-hover/msg:opacity-100 transition-all ml-1">
+                                                    <button className="p-1.5 hover:bg-black/5 rounded-lg text-muted-foreground transition-all premium-button" aria-label="Helpful"><ThumbsUp className="w-3.5 h-3.5" /></button>
+                                                    <button className="p-1.5 hover:bg-black/5 rounded-lg text-muted-foreground transition-all premium-button" aria-label="Not helpful"><ThumbsDown className="w-3.5 h-3.5" /></button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                )}
-                            </motion.div>
-                        ))}
-                        <div ref={messagesEndRef} />
-                    </div>
+
+                                    {msg.role === 'assistant' && msg.citations && msg.citations.length > 0 && (
+                                        <div className="ml-11 sm:ml-12 w-full max-w-[92%] sm:max-w-[85%] space-y-3">
+                                            {msg.engine === 'sheet_rag' && msg.validation && (
+                                                <div className="flex flex-wrap items-center gap-4 bg-primary/5 border border-primary/10 rounded-xl px-4 py-2.5">
+                                                    <Layers className="w-4 h-4 text-primary shrink-0" />
+                                                    <div className="flex gap-6">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] font-bold uppercase tracking-wider text-primary/60">Confidence</span>
+                                                            <span className="text-xs font-bold text-primary">{((msg.validation.avg_confidence || 0) * 100).toFixed(0)}% Sure</span>
+                                                        </div>
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[9px] font-bold uppercase tracking-wider text-primary/60">Sources</span>
+                                                            <span className="text-xs font-bold text-primary">{msg.validation.count || 0} Files</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                {msg.citations.map((cite, ci) => {
+                                                    const meta = cite.metadata as any;
+                                                    const arxivId = meta?.arxiv_id;
+                                                    const title = meta?.title || cite.text.slice(0, 60);
+                                                    
+                                                    return (
+                                                        <div key={ci} className="p-3.5 rounded-xl bg-white border border-border/60 hover:shadow-md transition-all group/cite">
+                                                            <div className="flex items-start justify-between gap-3 mb-1.5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-5 h-5 rounded-lg bg-secondary/50 flex items-center justify-center text-secondary-foreground shrink-0">
+                                                                        <BookOpen className="w-3 h-3" />
+                                                                    </div>
+                                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Source {ci + 1}</span>
+                                                                </div>
+                                                                {arxivId && (
+                                                                    <a 
+                                                                        href={`https://arxiv.org/abs/${arxivId}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="p-1 hover:bg-primary/5 rounded-lg text-primary opacity-0 group-hover/cite:opacity-100 transition-all premium-button"
+                                                                        aria-label="View on ArXiv"
+                                                                    >
+                                                                        <ExternalLink className="w-3 h-3" />
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs font-bold text-foreground leading-snug line-clamp-2 mb-1.5">{title}</p>
+                                                            <p className="text-[10px] text-muted-foreground/70 leading-relaxed line-clamp-2 italic">
+                                                                &ldquo;{cite.text}&rdquo;
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* --- INPUT AREA --- */}
             <div className="shrink-0 p-4 sm:p-6 lg:px-8 pb-4 pt-0">
-                <div className="max-w-4xl mx-auto w-full relative -mt-4">
+                <div className="max-w-4xl mx-auto w-full relative">
                     <div className="absolute -top-10 left-0 right-0 flex justify-center pointer-events-none">
                         <AnimatePresence>
                             {loading && (
