@@ -83,7 +83,7 @@ export function PapersLibrary() {
             </SheetTrigger>
             <SheetContent 
                 side="right" 
-                className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl bg-white border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
+                className="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl bg-card border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
             >
                 {/* Header Section */}
                 <div className="shrink-0 px-5 sm:px-8 py-5 sm:py-6 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -99,7 +99,7 @@ export function PapersLibrary() {
                     <Button
                         variant="outline"
                         size="sm"
-                        className="rounded-xl border-border bg-white hover:bg-black/5 font-bold text-[10px] uppercase tracking-wider px-4 h-10 premium-button"
+                        className="rounded-xl border-border bg-card hover:bg-muted font-bold text-[10px] uppercase tracking-wider px-4 h-10 premium-button"
                         onClick={() => api.exportAllBibtex()}
                         disabled={papers.length === 0}
                     >
@@ -113,14 +113,14 @@ export function PapersLibrary() {
                     <div className="space-y-6 flex flex-col h-full">
                         {/* Metrics Grid */}
                         <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 shrink-0">
-                            <div className="bg-black/5 p-4 sm:p-5 rounded-2xl border border-transparent hover:bg-white hover:border-border hover:shadow-premium transition-all group">
+                            <div className="bg-muted/50 p-4 sm:p-5 rounded-2xl border border-transparent hover:bg-card hover:border-border hover:shadow-premium transition-all group">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Activity className="w-3.5 h-3.5 text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
                                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Total Files</span>
                                 </div>
                                 <div className="text-xl sm:text-2xl font-bold tracking-tight">{stats?.total_papers ?? 0}</div>
                             </div>
-                            <div className="bg-black/5 p-4 sm:p-5 rounded-2xl border border-transparent hover:bg-white hover:border-border hover:shadow-premium transition-all group">
+                            <div className="bg-muted/50 p-4 sm:p-5 rounded-2xl border border-transparent hover:bg-card hover:border-border hover:shadow-premium transition-all group">
                                 <div className="flex items-center gap-2 mb-2">
                                     <Clock className="w-3.5 h-3.5 text-secondary-foreground opacity-40 group-hover:opacity-100 transition-opacity" />
                                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground/60">Total Pages</span>
@@ -137,13 +137,13 @@ export function PapersLibrary() {
                                     placeholder="Search files..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="h-11 pl-10 rounded-xl bg-black/5 border-transparent focus:bg-white focus:border-primary/20 transition-all font-medium input-glow"
+                                    className="h-11 pl-10 rounded-xl bg-muted/50 border-transparent focus:bg-card focus:border-primary/20 transition-all font-medium input-glow"
                                 />
                             </div>
                             <Button 
                                 onClick={loadPapers} 
                                 variant="outline" 
-                                className="h-11 w-11 rounded-xl border-border bg-white hover:bg-black/5 transition-all shrink-0 premium-button"
+                                className="h-11 w-11 rounded-xl border-border bg-card hover:bg-muted transition-all shrink-0 premium-button"
                                 aria-label="Refresh library"
                             >
                                 <RefreshCw className={cn("w-4 h-4 text-primary", loading && "animate-spin")} />
@@ -156,7 +156,7 @@ export function PapersLibrary() {
                                 <AnimatePresence mode="popLayout">
                                     {filteredPapers.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center py-16 text-center">
-                                            <div className="w-14 h-14 rounded-xl bg-black/5 flex items-center justify-center mb-4">
+                                            <div className="w-14 h-14 rounded-xl bg-muted/50 flex items-center justify-center mb-4">
                                                 <Database className="w-7 h-7 text-muted-foreground/20" />
                                             </div>
                                             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">No documents found</p>
@@ -169,7 +169,7 @@ export function PapersLibrary() {
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ delay: idx * 0.03 }}
-                                                    className="group relative bg-white border border-border p-4.5 rounded-xl hover:shadow-premium hover:border-primary/20 transition-all duration-300"
+                                                    className="group relative bg-card border border-border p-4.5 rounded-xl hover:shadow-premium hover:border-primary/20 transition-all duration-300"
                                                 >
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex-1 min-w-0">

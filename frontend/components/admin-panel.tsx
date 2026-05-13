@@ -71,7 +71,7 @@ export function AdminPanel() {
             </SheetTrigger>
             <SheetContent 
                 side="right" 
-                className="w-full sm:max-w-xl md:max-w-2xl bg-white border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
+                className="w-full sm:max-w-xl md:max-w-2xl bg-card border-l border-border p-0 flex flex-col shadow-2xl h-screen h-[100dvh]"
             >
                 <div className="shrink-0 px-5 sm:px-8 py-5 sm:py-6 border-b border-border flex items-center gap-4">
                     <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
@@ -89,7 +89,7 @@ export function AdminPanel() {
                             Add your PDFs here so the AI can read them.
                         </p>
 
-                        <div className="p-4 sm:p-5 bg-black/5 rounded-2xl border border-transparent hover:bg-white hover:border-border hover:shadow-premium transition-all flex items-center justify-between group">
+                        <div className="p-4 sm:p-5 bg-muted/50 rounded-2xl border border-transparent hover:bg-card hover:border-border hover:shadow-premium transition-all flex items-center justify-between group">
                             <div className="flex items-center gap-3">
                                 <Layers className="w-4.5 h-4.5 text-primary opacity-40 group-hover:opacity-100 transition-opacity" />
                                 <div className="flex flex-col">
@@ -117,7 +117,7 @@ export function AdminPanel() {
                             ref={fileInputRef}
                             onChange={handleFileSelect}
                         />
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white flex items-center justify-center shadow-premium group-hover:scale-110 transition-all mb-4">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-card flex items-center justify-center shadow-premium group-hover:scale-110 transition-all mb-4">
                             <Upload className="w-7 h-7 sm:w-8 sm:h-8 text-primary" />
                         </div>
                         <h4 className="text-base sm:text-lg font-bold tracking-tight mb-1">Upload PDF</h4>
@@ -139,7 +139,7 @@ export function AdminPanel() {
                                 
                                 <div className="max-h-40 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                                     {selectedFiles.map((file, i) => (
-                                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-black/5 border border-transparent hover:border-border hover:bg-white transition-all group">
+                                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-transparent hover:border-border hover:bg-card transition-all group">
                                             <div className="flex items-center gap-3 min-w-0">
                                                 <div className="w-7 h-7 rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0 opacity-40 group-hover:opacity-100 transition-opacity">
                                                     <FileText className="w-3.5 h-3.5" />
