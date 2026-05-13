@@ -386,6 +386,7 @@ class SheetRAGEngine:
             query_text: The user's query
             top_k: Number of results per layer
             use_cross_validation: Whether to filter with cross-validation
+            temperature: Creativity of the response
             
         Returns:
             Dict containing response, sources, and validation metadata
@@ -496,7 +497,7 @@ class SheetRAGEngine:
         validation_summary["retrieval_pool_per_layer"] = search_k
         
         # Generate response using LLM
-        response = self._generate_response(query_text, context_chunks)
+        response = self._generate_response(query_text, context_chunks, temperature)
         
         # Format sources
         sources = self._format_sources(
@@ -531,11 +532,16 @@ class SheetRAGEngine:
     def _generate_response(
         self,
         query_text: str,
-        context_chunks: List[ScoredChunk]
+        context_chunks: List[ScoredChunk],
+        temperature: float = 0.7
     ) -> str:
         """Generate response using LLM with context from validated chunks"""
         if not context_chunks:
             return "I couldn't find relevant information to answer your question with sufficient confidence."
+        
+        # Update LLM temperature
+        if hasattr(self.llm, 'temperature'):
+            self.llm.temperature = temperature
         
         # Build context string
         context_parts = []

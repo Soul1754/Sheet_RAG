@@ -68,15 +68,39 @@
   --input: oklch(0.92 0.005 60);
   --ring: oklch(0.45 0.14 160 / 0.3);
 
-  /* Fluid Typography System - Refined for readability */
+  /* Fluid Typography System */
   --font-size-xs: clamp(0.75rem, 0.7rem + 0.15vw, 0.85rem);
   --font-size-sm: clamp(0.875rem, 0.8rem + 0.15vw, 0.95rem);
   --font-size-base: clamp(1rem, 0.95rem + 0.15vw, 1.05rem);
-  --font-size-lg: clamp(1.125rem, 1.05rem + 0.25vw, 1.25rem);
-  --font-size-xl: clamp(1.25rem, 1.15rem + 0.5vw, 1.5rem);
-  --font-size-2xl: clamp(1.5rem, 1.4rem + 0.75vw, 1.875rem);
-  --font-size-3xl: clamp(1.875rem, 1.7rem + 1vw, 2.25rem);
-  --font-size-4xl: clamp(2.25rem, 2rem + 2vw, 3.5rem);
+}
+
+.dark {
+  /* Deep Graphite & Luminous Emerald (High-End SaaS Dark Theme) */
+  --background: oklch(0.12 0.01 250); /* Ultra-Deep Neutral */
+  --foreground: oklch(0.99 0.005 250); /* Brightest Foreground for Crisp Text */
+  
+  --card: oklch(0.16 0.01 250 / 0.9); /* Elevated Layer */
+  --card-foreground: oklch(0.99 0.005 250);
+  
+  --popover: oklch(0.14 0.01 250);
+  --popover-foreground: oklch(0.99 0.005 250);
+  
+  --primary: oklch(0.65 0.2 160); /* Luminous Emerald */
+  --primary-foreground: oklch(0.1 0.02 160);
+  
+  --secondary: oklch(0.2 0.02 160);
+  --secondary-foreground: oklch(0.92 0.02 160); /* Sharper Secondary Text */
+  
+  --muted: oklch(0.18 0.01 250);
+  --muted-foreground: oklch(0.75 0.01 250); /* Significantly improved contrast for secondary labels */
+  
+  --accent: oklch(0.22 0.01 250);
+  --accent-foreground: oklch(0.99 0.005 250);
+  
+  --destructive: oklch(0.45 0.18 25);
+  --border: oklch(0.26 0.01 250); /* Better defined borders */
+  --input: oklch(0.26 0.01 250);
+  --ring: oklch(0.65 0.2 160 / 0.4);
 }
 
 @layer base {
@@ -111,8 +135,9 @@
     flex-direction: column;
     position: relative;
     background-image: 
-      radial-gradient(circle at 2% 2%, oklch(0.95 0.04 160 / 0.1), transparent 40%),
-      radial-gradient(circle at 98% 98%, oklch(0.96 0.03 80 / 0.1), transparent 40%);
+      radial-gradient(circle at 2% 2%, var(--primary), transparent 40%),
+      radial-gradient(circle at 98% 98%, var(--secondary), transparent 40%);
+    background-opacity: 0.05;
     background-attachment: fixed;
     letter-spacing: -0.01em;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01", "ss02", "inter";
@@ -121,7 +146,7 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-premium;
+    @apply bg-card/70 backdrop-blur-xl border border-border/40 shadow-premium;
   }
 
   .premium-button {
@@ -146,19 +171,19 @@
   /* Layer 3: Interactive Panels */
   .surface-panel {
     backdrop-filter: blur(20px);
-    background-color: oklch(1 0 0 / 0.45);
-    border: 1px solid oklch(1 0 0 / 0.3);
+    background-color: var(--card);
+    border: 1px solid var(--border);
     box-shadow: 
       0 8px 32px -8px oklch(0 0 0 / 0.05),
-      inset 0 0 0 1px oklch(1 0 0 / 0.2);
+      inset 0 0 0 1px var(--border);
   }
 
   /* Layer 4: Active Elements */
   .surface-active {
-    background-color: oklch(1 0 0 / 0.9);
+    background-color: var(--card);
     box-shadow: 
       0 10px 40px -10px oklch(0 0 0 / 0.15),
-      0 0 0 1px oklch(1 0 0 / 0.5);
+      0 0 0 1px var(--border);
   }
 
   .emerald-glow-primary {

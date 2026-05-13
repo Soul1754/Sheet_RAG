@@ -9,8 +9,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Search, Trash2, RefreshCw, FileDown, Copy, Database, BookOpen, Clock, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useSidebar } from '@/lib/sidebar-context';
 
 export function PapersLibrary() {
+    const { isOpen } = useSidebar();
     const [papers, setPapers] = useState<IngestedPaper[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
@@ -71,9 +73,12 @@ export function PapersLibrary() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <button className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left premium-button group">
-                    <Database className="w-5 h-5 group-hover:text-primary transition-colors" />
-                    <span className="text-sm font-semibold tracking-tight">Files</span>
+                <button className={cn(
+                    "flex items-center rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left premium-button group",
+                    isOpen ? "gap-3 px-3.5 py-2.5" : "justify-center p-2.5"
+                )}>
+                    <Database className="w-5 h-5 group-hover:text-primary transition-colors shrink-0" />
+                    {isOpen && <span className="text-sm font-semibold tracking-tight">Files</span>}
                 </button>
             </SheetTrigger>
             <SheetContent 

@@ -22,11 +22,13 @@ interface Message {
     };
 }
 
+import { useSettings } from '@/lib/settings-context';
+
 export function ChatInterface() {
+    const { settings, updateSettings } = useSettings();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const [useSheetRAG, setUseSheetRAG] = useState(true);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [placeholder, setPlaceholder] = useState("Ask anything about your files...");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -78,14 +80,15 @@ export function ChatInterface() {
         setLoading(true);
 
         try {
-            const endpoint = useSheetRAG ? '/api/chat-v2-stream' : '/api/chat-stream';
+            const endpoint = settings.useSheetRAG ? '/api/chat-v2-stream' : '/api/chat-stream';
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     message: userMessage.content,
                     use_cross_validation: true,
-                    top_k: 5
+                    top_k: 5,
+                    temperature: settings.temperature
                 })
             });
 
@@ -163,13 +166,13 @@ export function ChatInterface() {
                         >
                             <div className="relative mb-6 group">
                                 <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full group-hover:bg-primary/30 transition-all duration-700" />
-                                <div className="relative w-14 h-14 rounded-[1.5rem] bg-white flex items-center justify-center shadow-premium border border-white transition-transform duration-500 group-hover:scale-110">
+                                <div className="relative w-14 h-14 rounded-[1.5rem] bg-card flex items-center justify-center shadow-premium border border-border/40 transition-transform duration-500 group-hover:scale-110">
                                     <Sparkles className="w-7 h-7 text-primary animate-pulse" />
                                 </div>
                             </div>
                             
-                            <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-2 text-foreground/90">AI Research Assistant</h3>
-                            <p className="text-muted-foreground/50 max-w-md text-xs sm:text-sm leading-relaxed font-medium mb-8 px-6">
+                            <h3 className="text-xl sm:text-2xl font-bold tracking-tight mb-2 text-foreground">AI Research Assistant</h3>
+                            <p className="text-muted-foreground/80 max-w-md text-xs sm:text-sm leading-relaxed font-medium mb-8 px-6">
                                 Ask questions about your uploaded files and get simple answers.
                             </p>
 
@@ -178,7 +181,7 @@ export function ChatInterface() {
                                     <button
                                         key={si}
                                         onClick={() => handleSend(s)}
-                                        className="p-3.5 rounded-xl bg-white border border-border/60 hover:border-primary/30 hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 text-[13px] font-semibold text-foreground/70 text-left flex items-center gap-3 group premium-button"
+                                        className="p-3.5 rounded-xl bg-card border border-border/60 hover:border-primary/30 hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 text-[13px] font-semibold text-foreground/90 text-left flex items-center gap-3 group premium-button"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-primary/5 flex items-center justify-center text-primary shrink-0 group-hover:bg-primary group-hover:text-white transition-all duration-300">
                                             <Zap className="w-3 h-3" />
@@ -208,7 +211,7 @@ export function ChatInterface() {
                                             "w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm border transition-all",
                                             msg.role === 'user'
                                                 ? 'bg-secondary border-secondary-foreground/10 text-secondary-foreground'
-                                                : 'bg-white border-border text-primary'
+                                                : 'bg-card border-border text-primary'
                                         )}>
                                             {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                         </div>
@@ -221,11 +224,11 @@ export function ChatInterface() {
                                                 "px-4 sm:px-6 py-3.5 sm:py-4.5 rounded-2xl sm:rounded-[2rem] shadow-sm overflow-hidden break-words transition-all duration-300",
                                                 msg.role === 'user'
                                                     ? 'bg-primary text-white shadow-lg shadow-primary/10'
-                                                    : 'bg-white border border-border/60 text-foreground hover:border-primary/20'
+                                                    : 'bg-card border border-border/60 text-foreground hover:border-primary/20'
                                             )}>
                                                 <div className={cn(
-                                                    "prose prose-sm sm:prose-base max-w-none leading-relaxed prose-pre:bg-black/5 prose-pre:p-3 prose-pre:rounded-lg prose-pre:overflow-x-auto custom-scrollbar",
-                                                    msg.role === 'user' ? "prose-p:text-white prose-headings:text-white prose-strong:text-white prose-code:text-white" : "prose-p:text-foreground/80 prose-headings:text-foreground"
+                                                    "prose prose-sm sm:prose-base max-w-none leading-relaxed prose-pre:bg-muted prose-pre:p-3 prose-pre:rounded-lg prose-pre:overflow-x-auto custom-scrollbar dark:prose-invert",
+                                                    msg.role === 'user' ? "prose-p:text-white prose-headings:text-white prose-strong:text-white prose-code:text-white" : "prose-p:text-foreground prose-headings:text-foreground"
                                                 )}>
                                                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                                                 </div>
@@ -233,8 +236,8 @@ export function ChatInterface() {
 
                                             {msg.role === 'assistant' && msg.content && (
                                                 <div className="flex gap-1 opacity-0 group-hover/msg:opacity-100 transition-all ml-1">
-                                                    <button className="p-1.5 hover:bg-black/5 rounded-lg text-muted-foreground transition-all premium-button" aria-label="Helpful"><ThumbsUp className="w-3.5 h-3.5" /></button>
-                                                    <button className="p-1.5 hover:bg-black/5 rounded-lg text-muted-foreground transition-all premium-button" aria-label="Not helpful"><ThumbsDown className="w-3.5 h-3.5" /></button>
+                                                    <button className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-all premium-button" aria-label="Helpful"><ThumbsUp className="w-3.5 h-3.5" /></button>
+                                                    <button className="p-1.5 hover:bg-muted rounded-lg text-muted-foreground transition-all premium-button" aria-label="Not helpful"><ThumbsDown className="w-3.5 h-3.5" /></button>
                                                 </div>
                                             )}
                                         </div>
@@ -325,17 +328,17 @@ export function ChatInterface() {
                     <div className="glass-card rounded-[2rem] p-2 flex flex-col gap-1 shadow-premium emerald-border-glow hover:shadow-input-focus transition-all duration-500">
                         <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40">
                             <button 
-                                onClick={() => setUseSheetRAG(!useSheetRAG)}
+                                onClick={() => updateSettings({ useSheetRAG: !settings.useSheetRAG })}
                                 className={cn(
                                     "flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-300 premium-button",
-                                    useSheetRAG ? "bg-primary/10 text-primary shadow-sm shadow-primary/5" : "text-muted-foreground/60 hover:bg-black/5"
+                                    settings.useSheetRAG ? "bg-primary/10 text-primary shadow-sm shadow-primary/5" : "text-muted-foreground/60 hover:bg-black/5"
                                 )}
                             >
                                 <Layers className="w-4 h-4" />
                                 <span className="text-[10px] font-bold uppercase tracking-widest">Multi-Layer Mode</span>
                                 <div className={cn(
                                     "w-1.5 h-1.5 rounded-full transition-all duration-500",
-                                    useSheetRAG ? "bg-primary shadow-[0_0_8px_rgba(0,163,108,0.6)]" : "bg-muted-foreground/20"
+                                    settings.useSheetRAG ? "bg-primary shadow-[0_0_8px_rgba(0,163,108,0.6)]" : "bg-muted-foreground/20"
                                 )} />
                             </button>
                         </div>

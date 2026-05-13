@@ -111,6 +111,7 @@ class SearchRequest(BaseModel):
 class ChatRequest(BaseModel):
     message: str
     conversation_id: str = "default"
+    temperature: float = 0.7
 
 class FeedbackRequest(BaseModel):
     message_id: str
@@ -123,6 +124,7 @@ class ChatV2Request(BaseModel):
     conversation_id: str = "default"
     use_cross_validation: bool = True  # Enable/disable cross-layer validation
     top_k: int = 5
+    temperature: float = 0.7
 
 @app.get("/health")
 def health():
@@ -408,7 +410,7 @@ def chat(request: ChatRequest):
         chat_history.add_message(request.conversation_id, "user", request.message)
         
         # Get response
-        response = rag.query(request.message)
+        response = rag.query(request.message, temperature=request.temperature)
         
         # Add assistant response to history
         chat_history.add_message(request.conversation_id, "assistant", str(response))
@@ -464,7 +466,7 @@ async def chat_stream(request: ChatRequest):
                 citations = []
             else:
                 # Normal RAG query
-                response = rag.query(request.message)
+                response = rag.query(request.message, temperature=request.temperature)
                 response_text = str(response)
                 
                 # Extract citations
@@ -673,7 +675,8 @@ def chat_sheet_rag(request: ChatV2Request):
         result = sheet_rag.query(
             query_text=request.message,
             top_k=request.top_k,
-            use_cross_validation=request.use_cross_validation
+            use_cross_validation=request.use_cross_validation,
+            temperature=request.temperature
         )
         
         # Add assistant response to history
@@ -703,7 +706,8 @@ async def chat_sheet_rag_stream(request: ChatV2Request):
             result = sheet_rag.query(
                 query_text=request.message,
                 top_k=request.top_k,
-                use_cross_validation=request.use_cross_validation
+                use_cross_validation=request.use_cross_validation,
+                temperature=request.temperature
             )
             
             response_text = result["response"]

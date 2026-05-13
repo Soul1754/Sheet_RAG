@@ -105,7 +105,7 @@ class RAGEngine:
         
         print(f"[OK] Index now contains {self.collection.count()} document chunks")
 
-    def query(self, query_text: str, top_k: int = 5, use_enhancement: bool = True):
+    def query(self, query_text: str, top_k: int = 5, use_enhancement: bool = True, temperature: float = 0.7):
         """Query the index with optional query enhancement"""
         if self.index is None or self.collection.count() == 0:
             log_standard_rag_query(
@@ -118,8 +118,13 @@ class RAGEngine:
             )
             return "Index is empty. Please ingest some papers first."
         
-        # Check cache first
-        cached_result = self.cache.get_query_result(query_text)
+        # Update LLM temperature
+        if hasattr(self.llm, 'temperature'):
+            self.llm.temperature = temperature
+            
+        # Check cache first (include temperature in key)
+        cache_key = f"{query_text}:{temperature}:{use_enhancement}"
+        cached_result = self.cache.get_query_result(cache_key)
         if cached_result:
             print("[OK] Cache hit for query")
             log_standard_rag_query(
@@ -204,7 +209,7 @@ class RAGEngine:
             source_nodes_summary=serialize_llama_response_sources(response),
         )
         # Cache the result
-        self.cache.set_query_result(query_text, response)
+        self.cache.set_query_result(cache_key, response)
         return response
 
     def get_stats(self):

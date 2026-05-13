@@ -8,8 +8,10 @@ import { Plus, Sparkles, RefreshCw, Layers, CheckCircle2, Upload, FileText, X, T
 import { Switch } from '@/components/ui/switch';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useSidebar } from '@/lib/sidebar-context';
 
 export function AdminPanel() {
+    const { isOpen } = useSidebar();
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
     const [useSheetRAG, setUseSheetRAG] = useState(true);
@@ -59,9 +61,12 @@ export function AdminPanel() {
     return (
         <Sheet>
             <SheetTrigger asChild>
-                <button className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left premium-button group">
-                    <Plus className="w-5 h-5 group-hover:text-primary transition-colors" />
-                    <span className="text-sm font-semibold tracking-tight">Add Files</span>
+                <button className={cn(
+                    "flex items-center rounded-xl text-muted-foreground hover:bg-black/5 hover:text-foreground transition-all w-full text-left premium-button group",
+                    isOpen ? "gap-3 px-3.5 py-2.5" : "justify-center p-2.5"
+                )}>
+                    <Plus className="w-5 h-5 group-hover:text-primary transition-colors shrink-0" />
+                    {isOpen && <span className="text-sm font-semibold tracking-tight">Add Files</span>}
                 </button>
             </SheetTrigger>
             <SheetContent 
